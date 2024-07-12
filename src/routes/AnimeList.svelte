@@ -230,7 +230,7 @@
 
 <svelte:window on:keydown={handleKeydown}/>
 
-<div class="list" class:active>
+<div class="list" class:active class:last={state === states.length-1}>
     {#if pickGenre}
         <Picker options={genres}
             bind:selected={pickerSelection}
@@ -281,9 +281,13 @@
         height: 40vh;
         width: 30vw;
 
-
-        margin: 1rem;
+        margin: 1.5vh;
         overflow: scroll;
+    }
+
+    .last {
+        grid-row: span 2;
+        height: 83vh;
     }
 
     ul {

@@ -77,8 +77,11 @@
         --term-purple: #bb9af7;
     }
 
-    .grid{
-        display: flex;
+    .grid {
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
 
     }
 </style>
