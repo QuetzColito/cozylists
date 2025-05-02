@@ -34,6 +34,7 @@ fn App() -> impl IntoView {
             style=("text-align", "center")
             style=("color", "#101018")
             style=("padding", ".5em 0")
+            style=("font-size", "50px")
             style:height="1em"
             style:width="2em"
             style:left=move || format!("{}px", left.get())
