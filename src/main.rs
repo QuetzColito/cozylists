@@ -8,7 +8,7 @@ fn App() -> impl IntoView {
         <button
             on:click=move |_| set_count.set(count.get() + 3)
         >
-            "Click me: "
+            "CClick me: "
             {count}
         </button>
         <p>
