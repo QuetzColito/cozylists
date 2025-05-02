@@ -1,25 +1,10 @@
 use js_sys::Math;
-use leptos::{
-    html::{Button, Div},
-    prelude::*,
-};
+use leptos::{html::Div, prelude::*};
 use leptos_use::{use_element_size, UseElementSizeReturn};
 
 #[component]
 fn App() -> impl IntoView {
     let (count, set_count) = signal(0);
-
-    view! {
-        <p>
-            "Count: "
-            {count}
-        </p>
-        <Egg set_count=set_count/>
-    }
-}
-
-#[component]
-fn Egg(set_count: WriteSignal<i32>) -> impl IntoView {
     let el = NodeRef::<Div>::new();
     let bref = document().query_selector("body").unwrap().unwrap();
     let UseElementSizeReturn {
@@ -44,17 +29,18 @@ fn Egg(set_count: WriteSignal<i32>) -> impl IntoView {
                 set_left.set(random_x());
                 set_top.set(random_y());
             }
-            style="position: absolute;"
+            style="position: absolute"
+            style=("background-image", "url(egg.svg)")
+            style=("text-align", "center")
+            style=("color", "#101018")
+            style=("padding", ".5em 0")
+            style:height="1em"
+            style:width="2em"
             style:left=move || format!("{}px", left.get())
             style:top=move || format!("{}px", top.get())
         >
-            <img src="../egg.svg" alt="egg"/>
+            {count}
         </div>
-        <p>{widthe}</p>
-        <p>{heighte}</p>
-        <p>{widthb}</p>
-        <p>{heightb}</p>
-        <img src="egg.svg" alt="egg" style="height=100px;width=100px;"/>
     }
 }
 
