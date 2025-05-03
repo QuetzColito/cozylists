@@ -48,7 +48,9 @@
           cargo-deny
           cargo-edit
           cargo-watch
+          leptosfmt
           trunk
+          dart-sass
           rust-analyzer
         ];
 

@@ -1,0 +1,20 @@
+@use './colours.scss' as colours;
+
+body {
+  background-color: colours.$bg;
+  color: colours.$fg;
+  height: 100vh;
+}
+
+button.egg {
+  all: unset;
+  background-image: url(egg.svg);
+  position: absolute;
+  padding: .5em 0;
+  font-size: 50px;
+  width: 2em;
+  height: 1em;
+  text-align: center;
+  color: colours.$base03;
+
+}
