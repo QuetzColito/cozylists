@@ -1,63 +1,39 @@
 {
-  description = "A Nix-flake-based Rust development environment";
-
   inputs = {
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1.*.tar.gz";
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    rust-overlay,
-  }: let
-    supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
-    forEachSupportedSystem = f:
-      nixpkgs.lib.genAttrs supportedSystems (system:
-        f {
-          pkgs = import nixpkgs {
-            inherit system;
-            overlays = [rust-overlay.overlays.default self.overlays.default];
-          };
-        });
+  outputs = {nixpkgs, ...}: let
+    eachSystem = f:
+      nixpkgs.lib.genAttrs nixpkgs.lib.systems.flakeExposed (system: f nixpkgs.legacyPackages.${system});
   in {
-    overlays.default = final: prev: {
-      rustToolchain = let
-        rust = prev.rust-bin;
-      in
-        if builtins.pathExists ./rust-toolchain.toml
-        then rust.fromRustupToolchainFile ./rust-toolchain.toml
-        else if builtins.pathExists ./rust-toolchain
-        then rust.fromRustupToolchainFile ./rust-toolchain
-        else
-          rust.stable.latest.default.override {
-            extensions = ["rust-src" "rustfmt"];
-            targets = ["wasm32-unknown-unknown"];
-          };
-    };
-
-    devShells = forEachSupportedSystem ({pkgs}: {
+    devShells = eachSystem (pkgs: {
       default = pkgs.mkShell {
-        packages = with pkgs; [
-          rustToolchain
-          openssl
-          pkg-config
-          cargo-deny
-          cargo-edit
-          cargo-watch
-          leptosfmt
-          trunk
-          dart-sass
-          rust-analyzer
-        ];
+        packages = [
+          pkgs.nodejs
 
-        env = {
-          # Required by rust-analyzer
-          RUST_SRC_PATH = "${pkgs.rustToolchain}/lib/rustlib/src/rust/library";
-        };
+          # Alternatively, you can use a specific major version of Node.js
+
+          # pkgs.nodejs-22_x
+
+          # Use corepack to install npm/pnpm/yarn as specified in package.json
+          pkgs.corepack
+
+          # To install a specific alternative package manager directly,
+          # comment out one of these to use an alternative package manager.
+
+          # pkgs.yarn
+          # pkgs.pnpm
+          # pkgs.bun
+
+          # Required to enable the language server
+          pkgs.nodePackages.typescript
+          pkgs.nodePackages.typescript-language-server
+
+          # Python is required on NixOS if the dependencies require node-gyp
+
+          # pkgs.python3
+        ];
       };
     });
   };
