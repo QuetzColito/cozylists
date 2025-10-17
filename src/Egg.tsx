@@ -26,7 +26,7 @@ const Egg: Component = () => {
       onClick={handleClick}
       class="egg"
       id="egg"
-      style={{ right: `${right()}px`, top: `${top()}px` }}
+      style={{ right: `${right()}px`, bottom: `${top()}px` }}
     >
       {count()}
     </button>

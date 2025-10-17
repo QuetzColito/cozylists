@@ -6,8 +6,17 @@ body {
   height: 100vh;
 }
 
+.activeList {
+  background-color: colours.$bg2;
+}
+
+.selection {
+  background-color: colours.$blue;
+  color: colours.$bg;
+}
+
 .active {
-  color: colours.$purple
+  background-color: colours.$purple;
 }
 
 button.egg {

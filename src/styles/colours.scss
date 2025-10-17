@@ -1,30 +1,49 @@
-$base00: #16161E; // ----
-$base01: #1A1B26; // ---
-$base02: #2F3549; // --
-$base03: #444B6A; // -
-$base04: #787C99; // +
-$base05: #A9B1D6; // ++
-$base06: #CBCCD1; // +++
-$base07: #D5D6DB; // ++++
-$base08: #F7768E; // Red
-$base09: #FF9E64; // Orange
-$base0A: #E0AF68; // Yellow
-$base0B: #9ECE6A; // Green
-$base0C: #7DCFFF; // Cyan
-$base0D: #7AA2F7; // Blue
-$base0E: #BB9AF7; // Purple
-$base0F: #D18616; // Brown
+body {
+  --base00: #16161E; // ----
+  --base01: #1A1B26; // ---
+  --base02: #2F3549; // --
+  --base03: #444B6A; // -
+  --base04: #787C99; // +
+  --base05: #A9B1D6; // ++
+  --base06: #CBCCD1; // +++
+  --base07: #D5D6DB; // ++++
+  --base08: #F7768E; // Red
+  --base09: #FF9E64; // Orange
+  --base0A: #E0AF68; // Yellow
+  --base0B: #9ECE6A; // Green
+  --base0C: #7DCFFF; // Cyan
+  --base0D: #7AA2F7; // Blue
+  --base0E: #BB9AF7; // Purple
+  --base0F: #D18616; // Brown
+}
 
-$bg: $base00;
-$bg2: $base02;
-$fg: $base05;
-$fg2: $base07;
+$base00: var(--base00);
+$base01: var(--base01);
+$base02: var(--base02);
+$base03: var(--base03);
+$base04: var(--base04);
+$base05: var(--base05);
+$base06: var(--base06);
+$base07: var(--base07);
+$base08: var(--base08);
+$base09: var(--base09);
+$base0A: var(--base0A);
+$base0B: var(--base0B);
+$base0C: var(--base0C);
+$base0D: var(--base0D);
+$base0E: var(--base0E);
+$base0F: var(--base0F);
 
-$red: $base08;
-$orange: $base09;
-$yellow: $base0A;
-$green: $base0B;
-$cyan: $base0C;
-$blue: $base0D;
-$purple: $base0E;
-$brown: $base0F;
+$bg: var(--base00);
+$bg2: var(--base02);
+$fg: var(--base05);
+$fg2: var(--base07);
+
+$red: var(--base08);
+$orange: var(--base09);
+$yellow: var(--base0A);
+$green: var(--base0B);
+$cyan: var(--base0C);
+$blue: var(--base0D);
+$purple: var(--base0E);
+$brown: var(--base0F);
