@@ -1,56 +1,100 @@
-import type { Component } from "solid-js";
-import { createEffect, createSignal, For, onMount, Show } from "solid-js";
-import { List, ListItem } from "./List";
+import type { Signal, Component, Accessor } from "solid-js";
+import { createMemo, createSignal, For, onMount } from "solid-js";
+import { List, ListApi, ListItem } from "./List";
 import "./styles/style.scss";
 
-const Lists: Component = () => {
-  let childHandler: ((e: KeyboardEvent) => void)[] = [];
-  let getSelection: (() => ListItem[])[] = [];
-  let isEdit: (() => boolean)[] = [];
+export type ParentApi = {
+  getClipboard: () => ListItem[];
+  count: Accessor<number>;
+  updateHistory: () => void;
+};
 
-  let clipboard: ListItem[] = [];
+const Lists: Component = () => {
+  let listApis: ListApi[] = [];
+  let list: Accessor<ListApi>;
 
   const lists = ["Watchable", "Watching", "Watched"];
   const [active, set_active] = createSignal(0);
   const countSignal = createSignal(0);
-  const [count, set_count] = countSignal;
+  const [internalCount, set_count] = countSignal;
+  const count = createMemo(() => Math.max(internalCount(), 1));
+
+  let clipboard: ListItem[] = [];
+  let current: ListItem[][];
+  let history: ListItem[][][] = [];
+  let reHistory: ListItem[][][] = [];
+
+  onMount(() => {
+    list = createMemo(() => listApis[active()]);
+    current = listApis.map((l) => structuredClone(l.items()));
+  });
 
   const handleKeyEvent = (e: KeyboardEvent) => {
-    if (isEdit[active()]()) childHandler[active()](e);
+    if (list().isEdit()) {
+      if (e.key == "Enter" || e.key == "Escape") list().stopEdit();
+      return true;
+    }
+
+    if (/^\d$/.test(e.key)) {
+      set_count(parseInt(internalCount().toString() + e.key));
+      return false;
+    }
 
     switch (e.key) {
       case "y":
-        clipboard = getSelection[active()]();
+        clipboard = list().getSelection();
         break;
       case "l":
-        set_active(active() + (1 % lists.length));
+        set_active(Math.min(active() + count(), lists.length - 1));
         break;
       case "h":
-        set_active(Math.max(active() - 1, 0));
+        set_active(Math.max(active() - count(), 0));
         break;
+      case "u": {
+        reHistory.push(listApis.map((l) => l.items()));
+        current = history.pop() ?? current;
+        listApis.map((l, i) => l.set_items(current[i]));
+        break;
+      }
+      case "U": {
+        history.push(listApis.map((l) => l.items()));
+        current = reHistory.pop() ?? current;
+        listApis.map((l, i) => l.set_items(current[i]));
+        break;
+      }
       default:
-        childHandler[active()](e);
+        return list().handleKey(e);
     }
+    return true;
   };
 
-  document.addEventListener("keydown", handleKeyEvent);
+  document.addEventListener("keydown", (e) => {
+    if (handleKeyEvent(e)) set_count(0);
+  });
+
+  const api = {
+    getClipboard: () => clipboard,
+    count: count,
+    updateHistory: () => {
+      history.push(current);
+      reHistory = [];
+      current = listApis.map((l) => structuredClone(l.items()));
+    },
+  };
 
   return (
-    <>
+    <div class="lists">
       <For each={lists}>
         {(name, index) => (
           <List
             name={name}
-            active={index() == active()}
-            getClipboard={() => clipboard}
-            countSignal={countSignal}
-            getSelection={(f) => (getSelection[index()] = f)}
-            handleKey={(f) => (childHandler[index()] = f)}
-            isEdit={(f) => (isEdit[index()] = f)}
+            active={createMemo(() => index() == active())}
+            getListApi={(api) => (listApis[index()] = api)}
+            parent={api}
           />
         )}
       </For>
-    </>
+    </div>
   );
 };
 

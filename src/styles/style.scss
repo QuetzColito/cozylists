@@ -7,7 +7,17 @@ body {
 }
 
 .activeList {
-  background-color: colours.$bg2;
+  background-color: colours.$bg1;
+  .selection {
+    background-color: colours.$blue;
+    color: colours.$bg;
+  }
+  .active {
+    background-color: colours.$purple !important;
+  }
+}
+.selection {
+  background-color: colours.$bg3;
 }
 
 .selection {
@@ -15,8 +25,37 @@ body {
   color: colours.$bg;
 }
 
-.active {
-  background-color: colours.$purple;
+.lists {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+
+  .header {
+    text-align: center;
+    margin: 0;
+    padding: .5rem;
+  }
+
+  .listWrapper {
+    margin: 2rem;
+    width: 20rem;
+    border-top: solid 3px;
+    border-bottom: solid 3px;
+    border-color: colours.$fg0;
+    border-radius: 10px;
+
+    .list {
+    border-top: dashed 2px;
+    border-color: colours.$fg0;
+      list-style-type: none;
+      padding: 1rem;
+      margin: 0;
+      .active {
+        background-color: colours.$fg0;
+      }
+
+    }
+  }
 }
 
 button.egg {
