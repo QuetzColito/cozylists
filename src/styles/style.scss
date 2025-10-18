@@ -4,45 +4,85 @@ body {
   background-color: colours.$bg;
   color: colours.$fg;
   height: 100vh;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+@mixin selected {
+  content: "";
+  position: absolute;
+  border-top: .5rem solid transparent;
+  border-bottom: .5rem solid transparent;
+}
+
+@mixin selected-before {
+  @include selected;
+  margin: .1rem -1.2rem;
+}
+@mixin selected-after {
+  @include selected;
+  margin: .1rem .2rem;
 }
 
 .activeList {
   background-color: colours.$bg1;
-  .selection {
-    background-color: colours.$blue;
-    color: colours.$bg;
+  .selection::before {
+    @include selected-before;
+    border-left: 1rem solid colours.$blue;
   }
-  .active {
-    background-color: colours.$purple !important;
+  .selection::after {
+    @include selected-after;
+    border-right: 1rem solid colours.$blue;
   }
-}
-.selection {
-  background-color: colours.$bg3;
+  .active::before {
+    @include selected-before;
+    border-left: 1rem solid colours.$purple;
+  }
+  .active::after {
+    @include selected-after;
+    border-right: 1rem solid colours.$purple;
+  }
 }
 
-.selection {
-  background-color: colours.$blue;
-  color: colours.$bg;
+.inActiveList {
+  .selection::before {
+    @include selected-before;
+    border-left: 1rem solid colours.$bg3;
+  }
+  .selection::after {
+    @include selected-after;
+    border-right: 1rem solid colours.$bg3;
+  }
+  .active::before {
+    @include selected-before;
+    border-left: 1rem solid colours.$fg;
+  }
+  .active::after {
+    @include selected-after;
+    border-right: 1rem solid colours.$fg;
+  }
 }
 
 .lists {
   display: flex;
   flex-direction: row;
-  width: 100%;
-
-  .header {
-    text-align: center;
-    margin: 0;
-    padding: .5rem;
-  }
+  min-width: 60rem;
 
   .listWrapper {
     margin: 2rem;
-    width: 20rem;
+    width: 100%;
+    max-width: 20rem;
+    height: calc(100vh - 4rem);
     border-top: solid 3px;
     border-bottom: solid 3px;
     border-color: colours.$fg0;
     border-radius: 10px;
+
+    .header {
+      text-align: center;
+      margin: 0;
+      padding: .5rem;
+    }
 
     .list {
     border-top: dashed 2px;
@@ -50,10 +90,6 @@ body {
       list-style-type: none;
       padding: 1rem;
       margin: 0;
-      .active {
-        background-color: colours.$fg0;
-      }
-
     }
   }
 }

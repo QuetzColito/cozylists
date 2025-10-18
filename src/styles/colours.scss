@@ -15,6 +15,24 @@ body {
   --base0D: #7AA2F7; // Blue
   --base0E: #BB9AF7; // Purple
   --base0F: #D18616; // Brown
+
+  --bg: var(--base00);
+  --bg1: var(--base01);
+  --bg2: var(--base02);
+  --bg3: var(--base03);
+  --fg: var(--base05);
+  --fg1: var(--base06);
+  --fg2: var(--base07);
+  --fg0: var(--base04);
+
+  --red: var(--base08);
+  --orange: var(--base09);
+  --yellow: var(--base0A);
+  --green: var(--base0B);
+  --cyan: var(--base0C);
+  --blue: var(--base0D);
+  --purple: var(--base0E);
+  --brown: var(--base0F);
 }
 
 $base00: var(--base00);

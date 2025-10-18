@@ -5,6 +5,7 @@ import "./styles/style.scss";
 
 export type ParentApi = {
   getClipboard: () => ListItem[];
+  setClipboard: (items: ListItem[]) => void;
   count: Accessor<number>;
   updateHistory: () => void;
 };
@@ -30,10 +31,7 @@ const Lists: Component = () => {
   });
 
   const handleKeyEvent = (e: KeyboardEvent) => {
-    if (list().isEdit()) {
-      if (e.key == "Enter" || e.key == "Escape") list().stopEdit();
-      return true;
-    }
+    if (list().grabFocus()) return list().handleKey(e);
 
     if (/^\d$/.test(e.key)) {
       set_count(parseInt(internalCount().toString() + e.key));
@@ -41,9 +39,6 @@ const Lists: Component = () => {
     }
 
     switch (e.key) {
-      case "y":
-        clipboard = list().getSelection();
-        break;
       case "l":
         set_active(Math.min(active() + count(), lists.length - 1));
         break;
@@ -74,6 +69,7 @@ const Lists: Component = () => {
 
   const api = {
     getClipboard: () => clipboard,
+    setClipboard: (items: ListItem[]) => (clipboard = items),
     count: count,
     updateHistory: () => {
       history.push(current);

@@ -6,12 +6,25 @@ import { ParentApi } from "./Lists";
 
 export type ListItem = {
   name: string;
+  color: string;
+  decorator: string;
+};
+export type Entry = {
+  name: string;
+  decoratorId: number;
+  colorId: number;
+};
+
+const newItem = () => {
+  return {
+    name: "",
+    color: "",
+    decorator: "",
+  };
 };
 
 export type ListApi = {
-  isEdit: () => boolean;
-  stopEdit: () => void;
-  getSelection: (all?: boolean) => ListItem[];
+  grabFocus: () => boolean;
   handleKey: (e: KeyboardEvent) => boolean;
   items: Accessor<ListItem[]>;
   set_items: Setter<ListItem[]>;
@@ -29,16 +42,30 @@ export const List: Component<ListProps> = (props: ListProps) => {
     [
       {
         name: "Mushoku Tensei",
+        color: "Fantasy",
       },
       {
         name: "Isekai Shikkaku",
+        color: "Fantasy",
       },
       {
         name: "Steins;Gate",
+        color: "Urban Fantasy",
       },
     ] as ListItem[],
     { equals: false },
   );
+
+  const colours = new Map([
+    ["default", "fg"],
+    ["Romance", "red"],
+    ["RomCom", "orange"],
+    ["Comedy", "yellow"],
+    ["Fantasy", "green"],
+    ["Urban Fantasy", "blue"],
+    ["Sci-Fi", "cyan"],
+    ["Drama", "purple"],
+  ]);
 
   const [selected, set_selected] = createSignal(0);
   const [selectionStart, set_selectionStart] = createSignal(0);
@@ -59,6 +86,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
   const edit = (e: KeyboardEvent) => {
     set_editing(selected());
     getInput().focus();
+    set_visual(false);
     e.preventDefault();
   };
 
@@ -66,6 +94,14 @@ export const List: Component<ListProps> = (props: ListProps) => {
     document.getElementById(selected().toString()) as HTMLInputElement;
 
   const defaultMap = (e: KeyboardEvent) => {
+    if (editing() >= 0) {
+      if (e.key == "Enter" || e.key == "Escape") {
+        items()[selected()].name = getInput().value;
+        update_items();
+        set_editing(-1);
+      }
+      return true;
+    }
     switch (e.key) {
       case "j":
         set_selected(Math.min(selected() + count(), items().length - 1));
@@ -75,23 +111,30 @@ export const List: Component<ListProps> = (props: ListProps) => {
         break;
       case "d":
       case "x":
-        items().splice(
-          lower(),
-          Math.abs(selected() - selectionStart()) + count(),
+        props.parent.setClipboard(
+          items().splice(
+            lower(),
+            Math.abs(selected() - selectionStart()) + count(),
+          ),
         );
+        set_selected(Math.min(selected(), Math.max(items().length - 1, 0)));
+        set_visual(false);
         update_items();
         break;
       case "o":
         const offset = Math.min(items().length, 1);
-        items().splice(selected() + offset, 0, { name: "" });
+        items().splice(selected() + offset, 0, newItem());
         update_items(false);
         set_selected(selected() + offset);
         edit(e);
         break;
       case "O":
-        items().splice(selected(), 0, { name: "" });
+        items().splice(selected(), 0, newItem());
         update_items(false);
         edit(e);
+        break;
+      case "y":
+        props.parent.setClipboard(items().slice(lower(), upper() + 1));
         break;
       case "p":
         const offsetp = Math.min(items().length, 1);
@@ -125,24 +168,26 @@ export const List: Component<ListProps> = (props: ListProps) => {
     return true;
   };
 
-  const stopEdit = () => {
-    items()[selected()].name = getInput().value;
-    update_items();
-    set_editing(-1);
-  };
+  const stopEdit = () => {};
 
   props.getListApi({
     handleKey: (e) => defaultMap(e),
-    getSelection: (all = false) =>
-      all ? items() : items().slice(lower(), upper() + 1),
-    isEdit: () => editing() >= 0,
-    stopEdit: stopEdit,
+    grabFocus: () => editing() >= 0,
     items: items,
     set_items: set_items,
   });
 
   return (
-    <div classList={{ activeList: props.active(), listWrapper: true }}>
+    <div
+      classList={{
+        activeList: props.active(),
+        inActiveList: !props.active(),
+        listWrapper: true,
+      }}
+    >
+      <div>editing: {editing()}</div>
+      <div>selected: {selected()}</div>
+      <div>selectionStart: {selectionStart()}</div>
       <h3 class="header">{props.name}</h3>
       <ul class="list">
         <For each={items()}>
@@ -150,10 +195,18 @@ export const List: Component<ListProps> = (props: ListProps) => {
             <li
               classList={{
                 active: selected() == index(),
-                selection: index() <= upper() && index() >= lower(),
+                selection:
+                  index() <= upper() &&
+                  index() >= lower() &&
+                  selected() != index(),
               }}
             >
-              <span class="line-number">
+              <span
+                class="line-number"
+                style={{
+                  color: selected() == index() ? "var(--bg2)" : "var(--fg2)",
+                }}
+              >
                 {selected() == index()
                   ? index()
                   : Math.abs(selected() - index())}
