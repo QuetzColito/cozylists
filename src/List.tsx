@@ -33,31 +33,40 @@ export type ListApi = {
 export type ListProps = {
   name: string;
   active: Accessor<boolean>;
+  readonly: boolean;
   getListApi: (api: ListApi) => void;
   parent: ParentApi;
 };
 
 export const List: Component<ListProps> = (props: ListProps) => {
   const [items, set_items] = createSignal(
-    [
-      {
-        name: "Mushoku Tensei",
-        color: "Fantasy",
-      },
-      {
-        name: "Isekai Shikkaku",
-        color: "Fantasy",
-      },
-      {
-        name: "Steins;Gate",
-        color: "Urban Fantasy",
-      },
-    ] as ListItem[],
+    [...Array(333).keys()]
+      .map(
+        () =>
+          [
+            {
+              name: "Mushoku Tensei",
+              color: "Fantasy",
+              decorator: "Good",
+            },
+            {
+              name: "Isekai Shikkaku",
+              color: "Fantasy",
+              decorator: "Best",
+            },
+            {
+              name: "Steins;Gate",
+              color: "Urban Fantasy",
+              decorator: "Mid",
+            },
+          ] as ListItem[],
+      )
+      .flat(),
     { equals: false },
   );
 
   const colours = new Map([
-    ["default", "fg"],
+    ["Not Categorized", "fg"],
     ["Romance", "red"],
     ["RomCom", "orange"],
     ["Comedy", "yellow"],
@@ -67,10 +76,51 @@ export const List: Component<ListProps> = (props: ListProps) => {
     ["Drama", "purple"],
   ]);
 
+  const decorators = new Map([
+    ["Not Rated", ""],
+    ["Trash", "🗑️"],
+    ["Bad", "👎"],
+    ["Mid", "🤏"],
+    ["Good", "👍"],
+    ["Very Good", "⭐️"],
+    ["Best", "✨"],
+  ]);
+
   const [selected, set_selected] = createSignal(0);
   const [selectionStart, set_selectionStart] = createSignal(0);
   const lower = createMemo(() => Math.min(selected(), selectionStart()));
   const upper = createMemo(() => Math.max(selected(), selectionStart()));
+  let preceding = "";
+  const SCROLL_OFF = 50;
+  createEffect(() => {
+    const el = document.getElementById("item" + selected());
+    const parent = document.getElementById(props.name.toString());
+    if (
+      (parent?.getBoundingClientRect().top ?? 0) >
+      (el?.getBoundingClientRect().bottom ?? 0) - SCROLL_OFF
+    )
+      parent?.scrollTo(
+        0,
+        (el?.offsetTop ?? 0) -
+          (parent.offsetTop ?? 0) -
+          SCROLL_OFF +
+          (el?.clientHeight ?? 0),
+      );
+
+    parent?.ontouchend;
+
+    if (
+      (parent?.getBoundingClientRect().bottom ?? 0) <
+      (el?.getBoundingClientRect().top ?? 0) + SCROLL_OFF
+    )
+      parent?.scrollTo(
+        0,
+        (el?.offsetTop ?? 0) -
+          (parent.clientHeight + (parent.offsetTop ?? 0)) +
+          SCROLL_OFF,
+      );
+  });
+
   const [editing, set_editing] = createSignal(-1);
   const [visual, set_visual] = createSignal(false);
   const count = props.parent.count;
@@ -94,6 +144,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
     document.getElementById(selected().toString()) as HTMLInputElement;
 
   const defaultMap = (e: KeyboardEvent) => {
+    // Edit
     if (editing() >= 0) {
       if (e.key == "Enter" || e.key == "Escape") {
         items()[selected()].name = getInput().value;
@@ -102,13 +153,83 @@ export const List: Component<ListProps> = (props: ListProps) => {
       }
       return true;
     }
+
+    if (e.getModifierState("Control")) {
+      let match = true;
+      switch (e.key) {
+        case "d":
+        case "D":
+          set_selected(Math.min(selected() + 20, items().length - 1));
+          break;
+        case "u":
+        case "U":
+          set_selected(Math.max(selected() - 25, 0));
+          break;
+        case "p":
+        case "P":
+          set_selected(Math.max(selected() - 20, 0));
+          break;
+        case "n":
+        case "N":
+          set_selected(Math.max(selected() - 20, 0));
+          break;
+        default:
+          match = false;
+      }
+      if (match) {
+        e.preventDefault();
+        return true;
+      }
+    }
+
+    // Read
+    let match = true;
     switch (e.key) {
+      case "J":
+        set_selected(Math.min(selected() + count() * 25, items().length - 1));
+        break;
       case "j":
         set_selected(Math.min(selected() + count(), items().length - 1));
         break;
       case "k":
         set_selected(Math.max(selected() - count(), 0));
         break;
+      case "K":
+        set_selected(Math.max(selected() - count() * 25, 0));
+        break;
+      case "g":
+        if (preceding == "g") set_selected(0);
+        else {
+          preceding = "g";
+          return false;
+        }
+        break;
+      case "G":
+        set_selected(items().length - 1);
+        break;
+      case "k":
+        set_selected(Math.max(selected() - count(), 0));
+        break;
+      case "y":
+        props.parent.setClipboard(items().slice(lower(), upper() + 1));
+        set_visual(false);
+        break;
+      case "v": {
+        set_visual(!visual());
+        break;
+      }
+      case "Escape": {
+        set_visual(false);
+        break;
+      }
+      default:
+        if (props.readonly) return false;
+        else match = false;
+    }
+    if (match) return true;
+
+    // Write
+    switch (e.key) {
       case "d":
       case "x":
         props.parent.setClipboard(
@@ -133,9 +254,6 @@ export const List: Component<ListProps> = (props: ListProps) => {
         update_items(false);
         edit(e);
         break;
-      case "y":
-        props.parent.setClipboard(items().slice(lower(), upper() + 1));
-        break;
       case "p":
         const offsetp = Math.min(items().length, 1);
         items().splice(selected() + offsetp, 0, ...props.parent.getClipboard());
@@ -154,21 +272,11 @@ export const List: Component<ListProps> = (props: ListProps) => {
         getInput().setSelectionRange(Infinity, Infinity);
         break;
       }
-      case "v": {
-        set_visual(!visual());
-        break;
-      }
-      case "Escape": {
-        set_visual(false);
-        break;
-      }
       default:
         return false;
     }
     return true;
   };
-
-  const stopEdit = () => {};
 
   props.getListApi({
     handleKey: (e) => defaultMap(e),
@@ -188,35 +296,38 @@ export const List: Component<ListProps> = (props: ListProps) => {
       <div>editing: {editing()}</div>
       <div>selected: {selected()}</div>
       <div>selectionStart: {selectionStart()}</div>
+      <div>count: {count()}</div>
       <h3 class="header">{props.name}</h3>
-      <ul class="list">
+      <ul class="list" id={props.name}>
         <For each={items()}>
           {(item, index) => (
-            <li
-              classList={{
-                active: selected() == index(),
-                selection:
-                  index() <= upper() &&
-                  index() >= lower() &&
-                  selected() != index(),
-              }}
-            >
-              <span
-                class="line-number"
-                style={{
-                  color: selected() == index() ? "var(--bg2)" : "var(--fg2)",
-                }}
-              >
+            <li id={`item${index()}`}>
+              <span class="line-number">
                 {selected() == index()
                   ? index()
                   : Math.abs(selected() - index())}
               </span>
               <Show when={index() != editing()}>
-                <span> {item.name} </span>
+                <span
+                  classList={{
+                    active: selected() == index(),
+                    selection:
+                      index() <= upper() &&
+                      index() >= lower() &&
+                      selected() != index(),
+                  }}
+                  class="name"
+                  style={{
+                    "--item-color": `var(--${colours.get(item.color)})`,
+                  }}
+                >
+                  {item.name}
+                </span>
               </Show>
               <Show when={index() == editing()}>
                 <input id={index().toString()} value={item.name} />
               </Show>
+              <span class="decorator"> {decorators.get(item.decorator)} </span>
             </li>
           )}
         </For>

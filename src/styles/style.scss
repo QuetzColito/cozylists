@@ -6,6 +6,8 @@ body {
   height: 100vh;
   margin: 0;
   box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+  font-size: 20px;
 }
 
 @mixin selected {
@@ -26,40 +28,24 @@ body {
 
 .activeList {
   background-color: colours.$bg1;
-  .selection::before {
-    @include selected-before;
-    border-left: 1rem solid colours.$blue;
+  .selection {
+    border-left: solid .3rem colours.$fg0 !important;
+    border-right: solid .3rem colours.$fg0 !important;
   }
-  .selection::after {
-    @include selected-after;
-    border-right: 1rem solid colours.$blue;
-  }
-  .active::before {
-    @include selected-before;
-    border-left: 1rem solid colours.$purple;
-  }
-  .active::after {
-    @include selected-after;
-    border-right: 1rem solid colours.$purple;
+  .active {
+    color: colours.$bg !important;
+    background-color: var(--item-color) !important;
   }
 }
 
 .inActiveList {
-  .selection::before {
-    @include selected-before;
-    border-left: 1rem solid colours.$bg3;
+  .active {
+    color: colours.$bg !important;
+    background-color: colours.$fg0 !important;
   }
-  .selection::after {
-    @include selected-after;
-    border-right: 1rem solid colours.$bg3;
-  }
-  .active::before {
-    @include selected-before;
-    border-left: 1rem solid colours.$fg;
-  }
-  .active::after {
-    @include selected-after;
-    border-right: 1rem solid colours.$fg;
+  .selection {
+    border-left: solid .3rem colours.$bg3 !important;
+    border-right: solid .3rem colours.$bg3 !important;
   }
 }
 
@@ -77,6 +63,8 @@ body {
     border-bottom: solid 3px;
     border-color: colours.$fg0;
     border-radius: 10px;
+    display: grid;
+    grid-template-rows: auto auto auto;
 
     .header {
       text-align: center;
@@ -84,12 +72,35 @@ body {
       padding: .5rem;
     }
 
+    .list::-webkit-scrollbar {
+      display: none;
+    }
+
     .list {
-    border-top: dashed 2px;
-    border-color: colours.$fg0;
+      border-top: dashed 2px;
+      border-color: colours.$fg0;
       list-style-type: none;
       padding: 1rem;
       margin: 0;
+      overflow: scroll;
+
+      li {
+        display: grid;
+        grid-template-columns: 2rem auto 1.5rem;
+
+        .line-number {
+          text-align: right;
+          margin-right: .3rem;
+        }
+
+        .name {
+          border-left: solid .3rem transparent;
+          border-right: solid .3rem transparent;
+          padding: 0 .2rem;
+          color: var(--item-color);
+        }
+
+      }
     }
   }
 }

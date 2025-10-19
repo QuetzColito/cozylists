@@ -85,6 +85,7 @@ const Lists: Component = () => {
           <List
             name={name}
             active={createMemo(() => index() == active())}
+            readonly={false}
             getListApi={(api) => (listApis[index()] = api)}
             parent={api}
           />
