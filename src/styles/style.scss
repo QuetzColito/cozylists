@@ -29,23 +29,21 @@ body {
 .activeList {
   background-color: colours.$bg1;
   .selection {
-    border-left: solid .3rem colours.$fg0 !important;
-    border-right: solid .3rem colours.$fg0 !important;
+    border-color: colours.$fg0 !important;
   }
   .active {
     color: colours.$bg !important;
-    background-color: var(--item-color) !important;
+    background-color: var(--item-color);
   }
 }
 
 .inActiveList {
   .active {
     color: colours.$bg !important;
-    background-color: colours.$fg0 !important;
+    background-color: colours.$fg0;
   }
   .selection {
-    border-left: solid .3rem colours.$bg3 !important;
-    border-right: solid .3rem colours.$bg3 !important;
+    border-color: colours.$bg3 !important;
   }
 }
 
@@ -94,8 +92,8 @@ body {
         }
 
         .name {
-          border-left: solid .3rem transparent;
-          border-right: solid .3rem transparent;
+          border:solid transparent;
+          border-width: 0 .3rem;
           padding: 0 .2rem;
           color: var(--item-color);
         }

@@ -3,11 +3,12 @@ import { createEffect, createMemo, For, onMount, Show } from "solid-js";
 import { createSignal } from "solid-js";
 import "./styles/style.scss";
 import { ParentApi } from "./Lists";
+import Selector, { SelectorApi } from "./Selector";
 
 export type ListItem = {
   name: string;
-  color: string;
-  decorator: string;
+  color: Signal<string>;
+  decorator: Signal<string>;
 };
 export type Entry = {
   name: string;
@@ -18,8 +19,8 @@ export type Entry = {
 const newItem = () => {
   return {
     name: "",
-    color: "",
-    decorator: "",
+    color: createSignal(""),
+    decorator: createSignal(""),
   };
 };
 
@@ -46,18 +47,18 @@ export const List: Component<ListProps> = (props: ListProps) => {
           [
             {
               name: "Mushoku Tensei",
-              color: "Fantasy",
-              decorator: "Good",
+              color: createSignal("Fantasy"),
+              decorator: createSignal("Good"),
             },
             {
               name: "Isekai Shikkaku",
-              color: "Fantasy",
-              decorator: "Best",
+              color: createSignal("Fantasy"),
+              decorator: createSignal("Best"),
             },
             {
               name: "Steins;Gate",
-              color: "Urban Fantasy",
-              decorator: "Mid",
+              color: createSignal("Urban Fantasy"),
+              decorator: createSignal("Mid"),
             },
           ] as ListItem[],
       )
@@ -66,7 +67,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
   );
 
   const colours = new Map([
-    ["Not Categorized", "fg"],
+    ["", "fg"],
     ["Romance", "red"],
     ["RomCom", "orange"],
     ["Comedy", "yellow"],
@@ -77,7 +78,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
   ]);
 
   const decorators = new Map([
-    ["Not Rated", ""],
+    ["", ""],
     ["Trash", "🗑️"],
     ["Bad", "👎"],
     ["Mid", "🤏"],
@@ -91,39 +92,31 @@ export const List: Component<ListProps> = (props: ListProps) => {
   const lower = createMemo(() => Math.min(selected(), selectionStart()));
   const upper = createMemo(() => Math.max(selected(), selectionStart()));
   let preceding = "";
+
+  // Automatic Scroll
   const SCROLL_OFF = 50;
   createEffect(() => {
-    const el = document.getElementById("item" + selected());
-    const parent = document.getElementById(props.name.toString());
+    const el = document.getElementById(props.name + "." + selected())!;
+    const parent = document.getElementById(props.name.toString())!;
+    let pTop = parent.offsetTop;
+    let eTop = el.offsetTop;
     if (
-      (parent?.getBoundingClientRect().top ?? 0) >
-      (el?.getBoundingClientRect().bottom ?? 0) - SCROLL_OFF
+      parent.getBoundingClientRect().top >
+      el.getBoundingClientRect().bottom - SCROLL_OFF
     )
-      parent?.scrollTo(
-        0,
-        (el?.offsetTop ?? 0) -
-          (parent.offsetTop ?? 0) -
-          SCROLL_OFF +
-          (el?.clientHeight ?? 0),
-      );
-
-    parent?.ontouchend;
+      parent.scrollTo(0, eTop - pTop - SCROLL_OFF + el.clientHeight);
 
     if (
-      (parent?.getBoundingClientRect().bottom ?? 0) <
-      (el?.getBoundingClientRect().top ?? 0) + SCROLL_OFF
+      parent.getBoundingClientRect().bottom <
+      el.getBoundingClientRect().top + SCROLL_OFF
     )
-      parent?.scrollTo(
-        0,
-        (el?.offsetTop ?? 0) -
-          (parent.clientHeight + (parent.offsetTop ?? 0)) +
-          SCROLL_OFF,
-      );
+      parent.scrollTo(0, eTop - parent.clientHeight + pTop + SCROLL_OFF);
   });
 
   const [editing, set_editing] = createSignal(-1);
   const [visual, set_visual] = createSignal(false);
   const count = props.parent.count;
+  let selectorActive = false;
   createEffect(() => {
     if (!visual()) set_selectionStart(selected());
   });
@@ -242,6 +235,12 @@ export const List: Component<ListProps> = (props: ListProps) => {
         set_visual(false);
         update_items();
         break;
+      case "c":
+        select((color) => items()[selected()].color[1](color));
+        break;
+      case "r":
+        select((decorator) => items()[selected()].decorator[1](decorator));
+        break;
       case "o":
         const offset = Math.min(items().length, 1);
         items().splice(selected() + offset, 0, newItem());
@@ -278,12 +277,29 @@ export const List: Component<ListProps> = (props: ListProps) => {
     return true;
   };
 
+  let currentMap = defaultMap;
+
   props.getListApi({
-    handleKey: (e) => defaultMap(e),
+    handleKey: (e) => currentMap(e),
     grabFocus: () => editing() >= 0,
     items: items,
     set_items: set_items,
   });
+
+  let selectorApi: SelectorApi;
+  const select = (action: (item: string) => void) => {
+    selectorApi.set_forColor(false);
+    selectorApi.set_prev(items()[selected()].decorator[0]());
+    selectorApi.set_okAction((item) => {
+      action(item);
+      update_items();
+      currentMap = defaultMap;
+      selectorActive = false;
+    });
+    currentMap = selectorApi.handler;
+    selectorActive = true;
+    selectorApi.activate();
+  };
 
   return (
     <div
@@ -296,12 +312,18 @@ export const List: Component<ListProps> = (props: ListProps) => {
       <div>editing: {editing()}</div>
       <div>selected: {selected()}</div>
       <div>selectionStart: {selectionStart()}</div>
+      <div>visual: {visual().toString()}</div>
       <div>count: {count()}</div>
+      <Selector
+        get_api={(api) => (selectorApi = api)}
+        decorators={decorators}
+        colours={colours}
+      />
       <h3 class="header">{props.name}</h3>
       <ul class="list" id={props.name}>
         <For each={items()}>
           {(item, index) => (
-            <li id={`item${index()}`}>
+            <li id={`${props.name}.${index()}`}>
               <span class="line-number">
                 {selected() == index()
                   ? index()
@@ -318,7 +340,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
                   }}
                   class="name"
                   style={{
-                    "--item-color": `var(--${colours.get(item.color)})`,
+                    "--item-color": `var(--${colours.get(item.color[0]())})`,
                   }}
                 >
                   {item.name}
@@ -327,7 +349,10 @@ export const List: Component<ListProps> = (props: ListProps) => {
               <Show when={index() == editing()}>
                 <input id={index().toString()} value={item.name} />
               </Show>
-              <span class="decorator"> {decorators.get(item.decorator)} </span>
+              <span class="decorator">
+                {" "}
+                {decorators.get(item.decorator[0]())}{" "}
+              </span>
             </li>
           )}
         </For>

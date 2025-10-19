@@ -27,7 +27,7 @@ const Lists: Component = () => {
 
   onMount(() => {
     list = createMemo(() => listApis[active()]);
-    current = listApis.map((l) => structuredClone(l.items()));
+    current = listApis.map((l) => l.items());
   });
 
   const handleKeyEvent = (e: KeyboardEvent) => {
@@ -39,9 +39,11 @@ const Lists: Component = () => {
     }
 
     switch (e.key) {
+      case "L":
       case "l":
         set_active(Math.min(active() + count(), lists.length - 1));
         break;
+      case "H":
       case "h":
         set_active(Math.max(active() - count(), 0));
         break;
@@ -74,7 +76,7 @@ const Lists: Component = () => {
     updateHistory: () => {
       history.push(current);
       reHistory = [];
-      current = listApis.map((l) => structuredClone(l.items()));
+      current = listApis.map((l) => l.items());
     },
   };
 
