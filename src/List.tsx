@@ -24,6 +24,15 @@ const newItem = () => {
   };
 };
 
+export const cloneList = (list: ListItem[]) => list.map((item) => clone(item));
+export const clone = (item: ListItem) => {
+  return {
+    name: item.name,
+    color: createSignal(item.color[0]()),
+    decorator: createSignal(item.decorator[0]()),
+  };
+};
+
 export type ListApi = {
   grabFocus: () => boolean;
   handleKey: (e: KeyboardEvent) => boolean;
@@ -199,9 +208,6 @@ export const List: Component<ListProps> = (props: ListProps) => {
         break;
       case "G":
         set_selected(items().length - 1);
-        break;
-      case "k":
-        set_selected(Math.max(selected() - count(), 0));
         break;
       case "y":
         props.parent.setClipboard(items().slice(lower(), upper() + 1));

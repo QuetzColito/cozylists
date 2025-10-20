@@ -1,6 +1,6 @@
 import type { Signal, Component, Accessor } from "solid-js";
 import { createMemo, createSignal, For, onMount } from "solid-js";
-import { List, ListApi, ListItem } from "./List";
+import { cloneList, List, ListApi, ListItem } from "./List";
 import "./styles/style.scss";
 
 export type ParentApi = {
@@ -27,7 +27,7 @@ const Lists: Component = () => {
 
   onMount(() => {
     list = createMemo(() => listApis[active()]);
-    current = listApis.map((l) => l.items());
+    current = listApis.map((l) => cloneList(l.items()));
   });
 
   const handleKeyEvent = (e: KeyboardEvent) => {
@@ -71,12 +71,12 @@ const Lists: Component = () => {
 
   const api = {
     getClipboard: () => clipboard,
-    setClipboard: (items: ListItem[]) => (clipboard = items),
+    setClipboard: (items: ListItem[]) => (clipboard = cloneList(items)),
     count: count,
     updateHistory: () => {
       history.push(current);
       reHistory = [];
-      current = listApis.map((l) => l.items());
+      current = listApis.map((l) => cloneList(l.items()));
     },
   };
 
