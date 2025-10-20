@@ -33,6 +33,7 @@ const Lists: Component = () => {
   const handleKeyEvent = (e: KeyboardEvent) => {
     if (list().grabFocus()) return list().handleKey(e);
 
+    // Read Count if Number
     if (/^\d$/.test(e.key)) {
       set_count(parseInt(internalCount().toString() + e.key));
       return false;
@@ -40,25 +41,23 @@ const Lists: Component = () => {
 
     switch (e.key) {
       case "L":
-      case "l":
+      case "l": // move right
         set_active(Math.min(active() + count(), lists.length - 1));
         break;
       case "H":
-      case "h":
+      case "h": // move left
         set_active(Math.max(active() - count(), 0));
         break;
-      case "u": {
-        reHistory.push(listApis.map((l) => l.items()));
+      case "u": // Undo
+        reHistory.push(current);
         current = history.pop() ?? current;
         listApis.map((l, i) => l.set_items(current[i]));
         break;
-      }
-      case "U": {
-        history.push(listApis.map((l) => l.items()));
+      case "U": // Redo
+        history.push(current);
         current = reHistory.pop() ?? current;
         listApis.map((l, i) => l.set_items(current[i]));
         break;
-      }
       default:
         return list().handleKey(e);
     }

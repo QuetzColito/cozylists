@@ -5,10 +5,9 @@ import { Portal } from "solid-js/web";
 import { List } from "./List";
 
 export type SelectorApi = {
-  set_okAction: (action: (selection: string) => void) => void;
+  set_okAction: (action: (selection: string | undefined) => void) => void;
   handler: (e: KeyboardEvent) => boolean;
   set_forColor: (forColor: boolean) => void;
-  set_prev: (prev: string) => void;
   activate: () => void;
 };
 
@@ -22,8 +21,7 @@ const Selector: Component<SelectorProps> = (props) => {
   const [selected, set_selected] = createSignal(0);
   const [forColor, set_forColor] = createSignal(true);
   const [active, set_active] = createSignal(false);
-  let prev = "";
-  let okAction = (select: string) => {};
+  let okAction = (select: string | undefined) => {};
   const select: Accessor<[string, string][]> = createMemo(() =>
     forColor() ? [...props.colours.entries()] : [...props.decorators.entries()],
   );
@@ -31,26 +29,31 @@ const Selector: Component<SelectorProps> = (props) => {
   props.get_api({
     set_okAction: (action) => (okAction = action),
     set_forColor: (forColor) => set_forColor(forColor),
-    set_prev: (previous) => (prev = previous),
     activate: () => set_active(true),
     handler: (e: KeyboardEvent) => {
-      if (/^\d$/.test(e.key) && select().length > parseInt(e.key)) {
-        okAction(select()[parseInt(e.key)][0]);
+      // Select directly via Id
+      if (
+        /^\d$/.test(e.key) &&
+        parseInt(e.key) <= select().length &&
+        parseInt(e.key) != 0
+      ) {
+        okAction(select()[parseInt(e.key) - 1][0]);
+        set_active(false);
         return true;
       }
 
       switch (e.key) {
-        case "j":
+        case "j": // Down
           set_selected(Math.min(selected() + 1, select().length - 1));
           break;
-        case "k":
+        case "k": // Up
           set_selected(Math.max(selected() - 1, 0));
           break;
-        case "Escape":
-          okAction(prev);
+        case "Escape": // Cancel
+          okAction(undefined);
           set_active(false);
           break;
-        case "Enter":
+        case "Enter": // Confirm
           okAction(select()[selected()][0]);
           set_active(false);
           break;
@@ -67,6 +70,7 @@ const Selector: Component<SelectorProps> = (props) => {
         <For each={select()}>
           {([name, value], index) => (
             <li>
+              <span> {index() + 1} </span>
               <span
                 classList={{
                   active: selected() == index(),
@@ -76,7 +80,7 @@ const Selector: Component<SelectorProps> = (props) => {
                   "--item-color": `var(--${forColor() ? value : "fg"})`,
                 }}
               >
-                {name}
+                {name || "None"}
               </span>
               <Show when={!forColor()}>
                 <span class="decorator"> {value} </span>

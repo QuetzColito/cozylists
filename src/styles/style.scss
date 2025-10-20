@@ -28,12 +28,14 @@ body {
 
 .activeList {
   background-color: colours.$bg1;
-  .selection {
-    border-color: colours.$fg0 !important;
-  }
   .active {
     color: colours.$bg !important;
     background-color: var(--item-color);
+    border-radius: 7px;
+  }
+  .selection {
+    background-color: var(--bg2);
+    // border-color: colours.$fg0 !important;
   }
 }
 
@@ -41,6 +43,7 @@ body {
   .active {
     color: colours.$bg !important;
     background-color: colours.$fg0;
+    border-radius: 7px;
   }
   .selection {
     border-color: colours.$bg3 !important;
@@ -50,7 +53,7 @@ body {
 .lists {
   display: flex;
   flex-direction: row;
-  min-width: 60rem;
+  min-width: 90rem;
 
   .listWrapper {
     margin: 2rem;
@@ -84,7 +87,7 @@ body {
 
       li {
         display: grid;
-        grid-template-columns: 2rem auto 1.5rem;
+        grid-template-columns: 2.5rem auto 1.7rem;
 
         .line-number {
           text-align: right;
@@ -92,12 +95,15 @@ body {
         }
 
         .name {
-          border:solid transparent;
+          border: dotted transparent;
           border-width: 0 .3rem;
           padding: 0 .2rem;
           color: var(--item-color);
         }
 
+        .decorator {
+          text-align: right;
+        }
       }
     }
   }

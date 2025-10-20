@@ -148,6 +148,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
   const defaultMap = (e: KeyboardEvent) => {
     // Edit
     if (editing() >= 0) {
+      // exit Editing
       if (e.key == "Enter" || e.key == "Escape") {
         items()[selected()].name = getInput().value;
         update_items();
@@ -160,20 +161,12 @@ export const List: Component<ListProps> = (props: ListProps) => {
       let match = true;
       switch (e.key) {
         case "d":
-        case "D":
+        case "D": // Down Half-page
           set_selected(Math.min(selected() + 20, items().length - 1));
           break;
         case "u":
-        case "U":
+        case "U": // Up Half-page
           set_selected(Math.max(selected() - 25, 0));
-          break;
-        case "p":
-        case "P":
-          set_selected(Math.max(selected() - 20, 0));
-          break;
-        case "n":
-        case "N":
-          set_selected(Math.max(selected() - 20, 0));
           break;
         default:
           match = false;
@@ -187,40 +180,38 @@ export const List: Component<ListProps> = (props: ListProps) => {
     // Read
     let match = true;
     switch (e.key) {
-      case "J":
+      case "J": // Down Half-page
         set_selected(Math.min(selected() + count() * 25, items().length - 1));
         break;
-      case "j":
+      case "j": // Down
         set_selected(Math.min(selected() + count(), items().length - 1));
         break;
-      case "k":
+      case "k": // Up
         set_selected(Math.max(selected() - count(), 0));
         break;
-      case "K":
+      case "K": // Up Half-page
         set_selected(Math.max(selected() - count() * 25, 0));
         break;
-      case "g":
+      case "g": // g submap, gg -> go to Top
         if (preceding == "g") set_selected(0);
         else {
           preceding = "g";
           return false;
         }
         break;
-      case "G":
+      case "G": // go to end
         set_selected(items().length - 1);
         break;
-      case "y":
+      case "y": // yank (copy)
         props.parent.setClipboard(items().slice(lower(), upper() + 1));
         set_visual(false);
         break;
-      case "v": {
+      case "v": // toggle visual mode
         set_visual(!visual());
         break;
-      }
-      case "Escape": {
+      case "Escape": // Exit visual mode
         set_visual(false);
         break;
-      }
       default:
         if (props.readonly) return false;
         else match = false;
@@ -230,7 +221,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
     // Write
     switch (e.key) {
       case "d":
-      case "x":
+      case "x": // delete Selection (and save to clipboard)
         props.parent.setClipboard(
           items().splice(
             lower(),
@@ -241,42 +232,62 @@ export const List: Component<ListProps> = (props: ListProps) => {
         set_visual(false);
         update_items();
         break;
-      case "c":
-        select((color) => items()[selected()].color[1](color));
+      case "c": // colour
+        select(true, (color) => {
+          if (color)
+            items()
+              .slice(lower(), upper() + 1)
+              .forEach((item) => item.color[1](color));
+        });
         break;
-      case "r":
-        select((decorator) => items()[selected()].decorator[1](decorator));
+      case "r": // rate (apply decorator)
+        select(false, (decorator) => {
+          if (decorator)
+            items()
+              .slice(lower(), upper() + 1)
+              .forEach((item) => item.decorator[1](decorator));
+        });
         break;
-      case "o":
+      case "R": // Replace Selection with clipboard
+        props.parent.setClipboard(
+          items().splice(
+            lower(),
+            Math.abs(selected() - selectionStart()) + count(),
+            ...props.parent.getClipboard(),
+          ),
+        );
+        set_selected(Math.min(selected(), Math.max(items().length - 1, 0)));
+        set_visual(false);
+        update_items();
+        break;
+      case "o": // new Item below cursor
         const offset = Math.min(items().length, 1);
         items().splice(selected() + offset, 0, newItem());
         update_items(false);
         set_selected(selected() + offset);
         edit(e);
         break;
-      case "O":
+      case "O": // new Item above cursor
         items().splice(selected(), 0, newItem());
         update_items(false);
         edit(e);
         break;
-      case "p":
+      case "p": // paste below cursor
         const offsetp = Math.min(items().length, 1);
         items().splice(selected() + offsetp, 0, ...props.parent.getClipboard());
         update_items();
         break;
-      case "P":
+      case "P": // paste above cursor
         items().splice(selected(), 0, ...props.parent.getClipboard());
         update_items();
         break;
-      case "i": {
+      case "i": // insert, cursor at start
         edit(e);
         break;
-      }
-      case "a": {
+      case "a": // append, cursor at end
         edit(e);
         getInput().setSelectionRange(Infinity, Infinity);
         break;
-      }
       default:
         return false;
     }
@@ -287,15 +298,17 @@ export const List: Component<ListProps> = (props: ListProps) => {
 
   props.getListApi({
     handleKey: (e) => currentMap(e),
-    grabFocus: () => editing() >= 0,
+    grabFocus: () => editing() >= 0 || selectorActive,
     items: items,
     set_items: set_items,
   });
 
   let selectorApi: SelectorApi;
-  const select = (action: (item: string) => void) => {
-    selectorApi.set_forColor(false);
-    selectorApi.set_prev(items()[selected()].decorator[0]());
+  const select = (
+    forColor: boolean,
+    action: (item: string | undefined) => void,
+  ) => {
+    selectorApi.set_forColor(forColor);
     selectorApi.set_okAction((item) => {
       action(item);
       update_items();
@@ -320,12 +333,12 @@ export const List: Component<ListProps> = (props: ListProps) => {
       <div>selectionStart: {selectionStart()}</div>
       <div>visual: {visual().toString()}</div>
       <div>count: {count()}</div>
+      <h3 class="header">{props.name}</h3>
       <Selector
         get_api={(api) => (selectorApi = api)}
         decorators={decorators}
         colours={colours}
       />
-      <h3 class="header">{props.name}</h3>
       <ul class="list" id={props.name}>
         <For each={items()}>
           {(item, index) => (
