@@ -1,6 +1,22 @@
 import type { Signal, Component, Accessor } from "solid-js";
-import { createMemo, createSignal, For, onMount } from "solid-js";
-import { cloneList, List, ListApi, ListItem } from "./List";
+import {
+  createMemo,
+  createResource,
+  createSignal,
+  For,
+  onMount,
+  Switch,
+  Match,
+  createEffect,
+} from "solid-js";
+import {
+  cloneList,
+  List,
+  ListApi,
+  ListItem,
+  makeStatic,
+  StoredListItem,
+} from "./List";
 import "./styles/style.scss";
 
 export type ParentApi = {
@@ -10,9 +26,25 @@ export type ParentApi = {
   updateHistory: () => void;
 };
 
+const apiUrl = import.meta.env.VITE_GOZY_URL;
+
+const fetchItems = async () => {
+  const response = await fetch(`${apiUrl}/items`);
+  return response.json();
+};
+
+const putItems = async (items: StoredListItem[][]) => {
+  fetch(`${apiUrl}/items`, {
+    method: "PUT",
+    body: JSON.stringify(items),
+  });
+};
+
 const Lists: Component = () => {
   let listApis: ListApi[] = [];
   let list: Accessor<ListApi>;
+
+  const [items] = createResource(fetchItems);
 
   const lists = ["Watchable", "Watching", "Watched"];
   const [active, set_active] = createSignal(0);
@@ -25,9 +57,11 @@ const Lists: Component = () => {
   let history: ListItem[][][] = [];
   let reHistory: ListItem[][][] = [];
 
-  onMount(() => {
-    list = createMemo(() => listApis[active()]);
-    current = listApis.map((l) => cloneList(l.items()));
+  createEffect(() => {
+    if (items()) {
+      list = createMemo(() => listApis[active()]);
+      current = listApis.map((l) => cloneList(l.items()));
+    }
   });
 
   const handleKeyEvent = (e: KeyboardEvent) => {
@@ -47,6 +81,9 @@ const Lists: Component = () => {
       case "H":
       case "h": // move left
         set_active(Math.max(active() - count(), 0));
+        break;
+      case "w": // move left
+        putItems(current.map((l) => l.map(makeStatic)));
         break;
       case "u": // Undo
         reHistory.push(current);
@@ -80,19 +117,30 @@ const Lists: Component = () => {
   };
 
   return (
-    <div class="lists">
-      <For each={lists}>
-        {(name, index) => (
-          <List
-            name={name}
-            active={createMemo(() => index() == active())}
-            readonly={false}
-            getListApi={(api) => (listApis[index()] = api)}
-            parent={api}
-          />
-        )}
-      </For>
-    </div>
+    <Switch>
+      <Match when={items.loading}>
+        <p> Loading ... </p>
+      </Match>
+      <Match when={items.error}>
+        <p> Error: {items.error} </p>
+      </Match>
+      <Match when={items()}>
+        <div class="lists">
+          <For each={items()}>
+            {(list, index) => (
+              <List
+                name={lists[index()]}
+                initialItems={list}
+                active={createMemo(() => index() == active())}
+                readonly={false}
+                getListApi={(api) => (listApis[index()] = api)}
+                parent={api}
+              />
+            )}
+          </For>
+        </div>
+      </Match>
+    </Switch>
   );
 };
 

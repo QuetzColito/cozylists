@@ -1,5 +1,5 @@
 import type { Accessor, Component, Setter, Signal } from "solid-js";
-import { createEffect, createMemo, For, onMount, Show } from "solid-js";
+import { createEffect, createMemo, For, Show } from "solid-js";
 import { createSignal } from "solid-js";
 import "./styles/style.scss";
 import { ParentApi } from "./Lists";
@@ -10,6 +10,13 @@ export type ListItem = {
   color: Signal<string>;
   decorator: Signal<string>;
 };
+
+export type StoredListItem = {
+  name: string;
+  color: string;
+  decorator: string;
+};
+
 export type Entry = {
   name: string;
   decoratorId: number;
@@ -21,6 +28,22 @@ const newItem = () => {
     name: "",
     color: createSignal(""),
     decorator: createSignal(""),
+  };
+};
+
+const makeReactive = (stored: StoredListItem) => {
+  return {
+    name: stored.name,
+    color: createSignal(stored.color),
+    decorator: createSignal(stored.decorator),
+  };
+};
+
+export const makeStatic = (item: ListItem) => {
+  return {
+    name: item.name,
+    color: item.color[0](),
+    decorator: item.decorator[0](),
   };
 };
 
@@ -44,35 +67,17 @@ export type ListProps = {
   name: string;
   active: Accessor<boolean>;
   readonly: boolean;
+  initialItems: StoredListItem[];
   getListApi: (api: ListApi) => void;
   parent: ParentApi;
 };
 
 export const List: Component<ListProps> = (props: ListProps) => {
   const [items, set_items] = createSignal(
-    [...Array(333).keys()]
-      .map(
-        () =>
-          [
-            {
-              name: "Mushoku Tensei",
-              color: createSignal("Fantasy"),
-              decorator: createSignal("Good"),
-            },
-            {
-              name: "Isekai Shikkaku",
-              color: createSignal("Fantasy"),
-              decorator: createSignal("Best"),
-            },
-            {
-              name: "Steins;Gate",
-              color: createSignal("Urban Fantasy"),
-              decorator: createSignal("Mid"),
-            },
-          ] as ListItem[],
-      )
-      .flat(),
-    { equals: false },
+    props.initialItems.map(makeReactive),
+    {
+      equals: false,
+    },
   );
 
   const colours = new Map([
@@ -105,8 +110,12 @@ export const List: Component<ListProps> = (props: ListProps) => {
   // Automatic Scroll
   const SCROLL_OFF = 50;
   createEffect(() => {
-    const el = document.getElementById(props.name + "." + selected())!;
-    const parent = document.getElementById(props.name.toString())!;
+    const el =
+      document.getElementById(props.name + "." + selected()) ??
+      document.getElementById("root")!;
+    const parent =
+      document.getElementById(props.name.toString()) ??
+      document.getElementById("root")!;
     let pTop = parent.offsetTop;
     let eTop = el.offsetTop;
     if (
@@ -328,12 +337,14 @@ export const List: Component<ListProps> = (props: ListProps) => {
         listWrapper: true,
       }}
     >
-      <div>editing: {editing()}</div>
-      <div>selected: {selected()}</div>
-      <div>selectionStart: {selectionStart()}</div>
-      <div>visual: {visual().toString()}</div>
-      <div>count: {count()}</div>
-      <h3 class="header">{props.name}</h3>
+      <div>
+        <div>editing: {editing()}</div>
+        <div>selected: {selected()}</div>
+        <div>selectionStart: {selectionStart()}</div>
+        <div>visual: {visual().toString()}</div>
+        <div>count: {count()}</div>
+        <h3 class="header">{props.name}</h3>
+      </div>
       <Selector
         get_api={(api) => (selectorApi = api)}
         decorators={decorators}
