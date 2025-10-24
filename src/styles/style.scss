@@ -4,6 +4,7 @@ body {
   background-color: colours.$bg;
   color: colours.$fg;
   height: 100vh;
+  width: 100vw;
   margin: 0;
   box-sizing: border-box;
   font-family: "Inter", sans-serif;
@@ -34,15 +35,20 @@ body {
   }
 }
 
+#root {
+  width: 100%;
+}
+
 .lists {
   display: flex;
   flex-direction: row;
-  min-width: 90rem;
+  justify-content: center;
+  width: 100%;
 
   .listWrapper {
     margin: 2rem;
-    width: 100%;
-    max-width: 20rem;
+    // width: 100%;
+    width: 30rem;
     height: calc(100vh - 4rem);
     border-top: solid 3px;
     border-bottom: solid 3px;
