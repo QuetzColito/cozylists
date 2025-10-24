@@ -4,57 +4,8 @@ import { createSignal } from "solid-js";
 import "./styles/style.scss";
 import { ParentApi } from "./Lists";
 import Selector, { SelectorApi } from "./Selector";
-
-export type ListItem = {
-  name: string;
-  color: Signal<string>;
-  decorator: Signal<string>;
-};
-
-export type StoredListItem = {
-  name: string;
-  color: string;
-  decorator: string;
-};
-
-export type Entry = {
-  name: string;
-  decoratorId: number;
-  colorId: number;
-};
-
-const newItem = () => {
-  return {
-    name: "",
-    color: createSignal(""),
-    decorator: createSignal(""),
-  };
-};
-
-const makeReactive = (stored: StoredListItem) => {
-  return {
-    name: stored.name,
-    color: createSignal(stored.color),
-    decorator: createSignal(stored.decorator),
-  };
-};
-
-export const makeStatic = (item: ListItem) => {
-  return {
-    name: item.name,
-    color: item.color[0](),
-    decorator: item.decorator[0](),
-  };
-};
-
-export const cloneList = (list: ListItem[]) => list.map((item) => clone(item));
-export const clone = (item: ListItem) => {
-  return {
-    name: item.name,
-    color: createSignal(item.color[0]()),
-    decorator: createSignal(item.decorator[0]()),
-  };
-};
+import { ListItem, StoredListItem } from "./items";
+import * as Item from "./items";
 
 export type ListApi = {
   grabFocus: () => boolean;
@@ -67,24 +18,21 @@ export type ListProps = {
   name: string;
   active: Accessor<boolean>;
   readonly: boolean;
-  initialItems: StoredListItem[];
-  getListApi: (api: ListApi) => void;
+  initialItems: ListItem[];
+  setListApi: (api: ListApi) => void;
   parent: ParentApi;
 };
 
 export const List: Component<ListProps> = (props: ListProps) => {
-  const [items, set_items] = createSignal(
-    props.initialItems.map(makeReactive),
-    {
-      equals: false,
-    },
-  );
+  const [items, set_items] = createSignal(props.initialItems, {
+    equals: false,
+  });
 
   const colours = new Map([
     ["", "fg"],
     ["Romance", "red"],
     ["RomCom", "orange"],
-    ["Comedy", "yellow"],
+    ["Alternate History", "yellow"],
     ["Fantasy", "green"],
     ["Urban Fantasy", "blue"],
     ["Sci-Fi", "cyan"],
@@ -105,7 +53,6 @@ export const List: Component<ListProps> = (props: ListProps) => {
   const [selectionStart, set_selectionStart] = createSignal(0);
   const lower = createMemo(() => Math.min(selected(), selectionStart()));
   const upper = createMemo(() => Math.max(selected(), selectionStart()));
-  let preceding = "";
 
   // Automatic Scroll
   const SCROLL_OFF = 50;
@@ -134,6 +81,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
   const [editing, set_editing] = createSignal(-1);
   const [visual, set_visual] = createSignal(false);
   const count = props.parent.count;
+  const commandPrefix = props.parent.commandPrefix;
   let selectorActive = false;
   createEffect(() => {
     if (!visual()) set_selectionStart(selected());
@@ -159,11 +107,11 @@ export const List: Component<ListProps> = (props: ListProps) => {
     if (editing() >= 0) {
       // exit Editing
       if (e.key == "Enter" || e.key == "Escape") {
-        items()[selected()].name = getInput().value;
+        items()[selected()].name = getInput().value.trim();
         update_items();
         set_editing(-1);
-      }
-      return true;
+        return true;
+      } else return false;
     }
 
     if (e.getModifierState("Control")) {
@@ -202,11 +150,8 @@ export const List: Component<ListProps> = (props: ListProps) => {
         set_selected(Math.max(selected() - count() * 25, 0));
         break;
       case "g": // g submap, gg -> go to Top
-        if (preceding == "g") set_selected(0);
-        else {
-          preceding = "g";
-          return false;
-        }
+        if (commandPrefix() == "g") set_selected(0);
+        else return props.parent.appendCommand("g");
         break;
       case "G": // go to end
         set_selected(items().length - 1);
@@ -243,7 +188,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
         break;
       case "c": // colour
         select(true, (color) => {
-          if (color)
+          if (color != undefined)
             items()
               .slice(lower(), upper() + 1)
               .forEach((item) => item.color[1](color));
@@ -251,18 +196,18 @@ export const List: Component<ListProps> = (props: ListProps) => {
         break;
       case "r": // rate (apply decorator)
         select(false, (decorator) => {
-          if (decorator)
+          if (decorator != undefined)
             items()
               .slice(lower(), upper() + 1)
               .forEach((item) => item.decorator[1](decorator));
         });
         break;
       case "R": // Replace Selection with clipboard
-        props.parent.setClipboard(
+        props.parent.useClipboard((clipboard) =>
           items().splice(
             lower(),
             Math.abs(selected() - selectionStart()) + count(),
-            ...props.parent.getClipboard(),
+            ...clipboard,
           ),
         );
         set_selected(Math.min(selected(), Math.max(items().length - 1, 0)));
@@ -271,31 +216,37 @@ export const List: Component<ListProps> = (props: ListProps) => {
         break;
       case "o": // new Item below cursor
         const offset = Math.min(items().length, 1);
-        items().splice(selected() + offset, 0, newItem());
+        items().splice(selected() + offset, 0, Item.create());
         update_items(false);
         set_selected(selected() + offset);
         edit(e);
         break;
       case "O": // new Item above cursor
-        items().splice(selected(), 0, newItem());
+        items().splice(selected(), 0, Item.create());
         update_items(false);
         edit(e);
         break;
       case "p": // paste below cursor
-        const offsetp = Math.min(items().length, 1);
-        items().splice(selected() + offsetp, 0, ...props.parent.getClipboard());
-        update_items();
+        props.parent.useClipboard((clipboard) => {
+          const offsetp = Math.min(items().length, 1);
+          items().splice(selected() + offsetp, 0, ...clipboard);
+          update_items();
+        });
         break;
       case "P": // paste above cursor
-        items().splice(selected(), 0, ...props.parent.getClipboard());
-        update_items();
+        props.parent.useClipboard((clipboard) => {
+          items().splice(selected(), 0, ...clipboard);
+          update_items();
+        });
         break;
+      case "I":
       case "i": // insert, cursor at start
         edit(e);
+        getInput().setSelectionRange(Infinity, Infinity);
         break;
+      case "A":
       case "a": // append, cursor at end
         edit(e);
-        getInput().setSelectionRange(Infinity, Infinity);
         break;
       default:
         return false;
@@ -305,7 +256,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
 
   let currentMap = defaultMap;
 
-  props.getListApi({
+  props.setListApi({
     handleKey: (e) => currentMap(e),
     grabFocus: () => editing() >= 0 || selectorActive,
     items: items,
@@ -338,11 +289,13 @@ export const List: Component<ListProps> = (props: ListProps) => {
       }}
     >
       <div>
-        <div>editing: {editing()}</div>
-        <div>selected: {selected()}</div>
-        <div>selectionStart: {selectionStart()}</div>
-        <div>visual: {visual().toString()}</div>
-        <div>count: {count()}</div>
+        {
+          // <div>editing: {editing()}</div>
+          // <div>selected: {selected()}</div>
+          // <div>selectionStart: {selectionStart()}</div>
+          // <div>visual: {visual().toString()}</div>
+          // <div>count: {count()}</div>
+        }
         <h3 class="header">{props.name}</h3>
       </div>
       <Selector

@@ -4,52 +4,37 @@ import {
   createResource,
   createSignal,
   For,
-  onMount,
   Switch,
   Match,
   createEffect,
 } from "solid-js";
-import {
-  cloneList,
-  List,
-  ListApi,
-  ListItem,
-  makeStatic,
-  StoredListItem,
-} from "./List";
+import { List, ListApi } from "./List";
 import "./styles/style.scss";
+import { ListItem } from "./items";
+import * as Item from "./items";
+import * as Api from "./api";
 
 export type ParentApi = {
-  getClipboard: () => ListItem[];
+  useClipboard: (action: (items: ListItem[]) => void) => void;
   setClipboard: (items: ListItem[]) => void;
   count: Accessor<number>;
+  commandPrefix: Accessor<string>;
+  appendCommand: (command: string) => boolean;
   updateHistory: () => void;
 };
 
-const apiUrl = import.meta.env.VITE_GOZY_URL;
-
-const fetchItems = async () => {
-  const response = await fetch(`${apiUrl}/items`);
-  return response.json();
-};
-
-const putItems = async (items: StoredListItem[][]) => {
-  fetch(`${apiUrl}/items`, {
-    method: "PUT",
-    body: JSON.stringify(items),
-  });
-};
+type STATE = "LOADING" | "ERROR" | "READY";
 
 const Lists: Component = () => {
   let listApis: ListApi[] = [];
-  let list: Accessor<ListApi>;
-
-  const [items] = createResource(fetchItems);
+  let [state, set_state] = createSignal<STATE>("LOADING");
 
   const lists = ["Watchable", "Watching", "Watched"];
   const [active, set_active] = createSignal(0);
   const countSignal = createSignal(0);
   const [internalCount, set_count] = countSignal;
+  const commandPrefixSignal = createSignal("");
+  const [commandPrefix, set_commandPrefix] = commandPrefixSignal;
   const count = createMemo(() => Math.max(internalCount(), 1));
 
   let clipboard: ListItem[] = [];
@@ -57,15 +42,8 @@ const Lists: Component = () => {
   let history: ListItem[][][] = [];
   let reHistory: ListItem[][][] = [];
 
-  createEffect(() => {
-    if (items()) {
-      list = createMemo(() => listApis[active()]);
-      current = listApis.map((l) => cloneList(l.items()));
-    }
-  });
-
   const handleKeyEvent = (e: KeyboardEvent) => {
-    if (list().grabFocus()) return list().handleKey(e);
+    if (listApis[active()].grabFocus()) return listApis[active()].handleKey(e);
 
     // Read Count if Number
     if (/^\d$/.test(e.key)) {
@@ -74,6 +52,10 @@ const Lists: Component = () => {
     }
 
     switch (e.key) {
+      case " ":
+        set_commandPrefix(" ");
+        e.preventDefault();
+        return false;
       case "L":
       case "l": // move right
         set_active(Math.min(active() + count(), lists.length - 1));
@@ -83,7 +65,8 @@ const Lists: Component = () => {
         set_active(Math.max(active() - count(), 0));
         break;
       case "w": // move left
-        putItems(current.map((l) => l.map(makeStatic)));
+        if (commandPrefix() == " ")
+          Api.putItems(current.map((l) => l.map(Item.makeStatic)));
         break;
       case "u": // Undo
         reHistory.push(current);
@@ -96,44 +79,75 @@ const Lists: Component = () => {
         listApis.map((l, i) => l.set_items(current[i]));
         break;
       default:
-        return list().handleKey(e);
+        return listApis[active()].handleKey(e);
     }
     return true;
   };
 
   document.addEventListener("keydown", (e) => {
-    if (handleKeyEvent(e)) set_count(0);
+    if (state() == "READY")
+      if (handleKeyEvent(e)) {
+        set_count(0);
+        set_commandPrefix("");
+        e.preventDefault();
+      }
   });
 
   const api = {
-    getClipboard: () => clipboard,
-    setClipboard: (items: ListItem[]) => (clipboard = cloneList(items)),
+    useClipboard: (action: (items: ListItem[]) => void) => {
+      if (commandPrefix() == " ") Item.readFromClipboard().then(action);
+      else action(clipboard);
+    },
+    setClipboard: (items: ListItem[]) => {
+      if (commandPrefix() == " ") Item.saveToClipboard(items);
+      else clipboard = Item.cloneList(items);
+    },
     count: count,
+    commandPrefix: commandPrefix,
+    appendCommand: (command: string) => {
+      set_commandPrefix((prev) => prev + command);
+      return false;
+    },
     updateHistory: () => {
-      history.push(current);
+      history.push(Item.cloneLists(current));
       reHistory = [];
-      current = listApis.map((l) => cloneList(l.items()));
+      current = listApis.map((l) => Item.cloneList(l.items()));
     },
   };
 
+  let initialItems: ListItem[][] = [];
+  Api.fetchItems()
+    .then((items) => {
+      initialItems = items.map((list: Item.StoredListItem[]) =>
+        list.map(Item.makeReactive),
+      );
+      current = Item.cloneLists(initialItems);
+      set_state("READY");
+    })
+    .catch((err) => {
+      console.error("Couldnt load Initial Items", err);
+      set_state("ERROR");
+    })
+    .finally();
+
   return (
     <Switch>
-      <Match when={items.loading}>
+      <Match when={state() == "LOADING"}>
         <p> Loading ... </p>
       </Match>
-      <Match when={items.error}>
-        <p> Error: {items.error} </p>
+      <Match when={state() == "ERROR"}>
+        <p> Error {} </p>
       </Match>
-      <Match when={items()}>
+      <Match when={state() == "READY"}>
         <div class="lists">
-          <For each={items()}>
+          <For each={initialItems}>
             {(list, index) => (
               <List
                 name={lists[index()]}
                 initialItems={list}
                 active={createMemo(() => index() == active())}
                 readonly={false}
-                getListApi={(api) => (listApis[index()] = api)}
+                setListApi={(api) => (listApis[index()] = api)}
                 parent={api}
               />
             )}

@@ -1,8 +1,6 @@
 import type { Accessor, Component } from "solid-js";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import "./styles/style.scss";
-import { Portal } from "solid-js/web";
-import { List } from "./List";
 
 export type SelectorApi = {
   set_okAction: (action: (selection: string | undefined) => void) => void;
@@ -21,7 +19,7 @@ const Selector: Component<SelectorProps> = (props) => {
   const [selected, set_selected] = createSignal(0);
   const [forColor, set_forColor] = createSignal(true);
   const [active, set_active] = createSignal(false);
-  let okAction = (select: string | undefined) => {};
+  let okAction: (result: string | undefined) => void;
   const select: Accessor<[string, string][]> = createMemo(() =>
     forColor() ? [...props.colours.entries()] : [...props.decorators.entries()],
   );

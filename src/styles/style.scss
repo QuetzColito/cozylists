@@ -10,22 +10,6 @@ body {
   font-size: 20px;
 }
 
-@mixin selected {
-  content: "";
-  position: absolute;
-  border-top: .5rem solid transparent;
-  border-bottom: .5rem solid transparent;
-}
-
-@mixin selected-before {
-  @include selected;
-  margin: .1rem -1.2rem;
-}
-@mixin selected-after {
-  @include selected;
-  margin: .1rem .2rem;
-}
-
 .activeList {
   background-color: colours.$bg1;
   .active {
@@ -71,6 +55,8 @@ body {
       text-align: center;
       margin: 0;
       padding: .5rem;
+      border-bottom: dashed 2px;
+      border-color: colours.$fg0;
     }
 
     .list::-webkit-scrollbar {
@@ -78,8 +64,6 @@ body {
     }
 
     .list {
-      border-top: dashed 2px;
-      border-color: colours.$fg0;
       list-style-type: none;
       padding: 1rem;
       margin: 0;
