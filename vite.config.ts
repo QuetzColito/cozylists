@@ -14,8 +14,22 @@ export default defineConfig({
   plugins: [devtools(), solidPlugin(), fullReloadAlways],
   server: {
     port: 3000,
+    proxy: {
+      '/api/': {
+        target: 'http://localhost:3333/',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api/, ''),
+      }
+    },
   },
+  root: '.',
   build: {
     target: "esnext",
+    rollupOptions: {
+      input: {
+        lists: '/lists/index.html',
+        account: '/account/index.html',
+      }
+    }
   },
 });

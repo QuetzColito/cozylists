@@ -9,7 +9,7 @@ import {
   createEffect,
 } from "solid-js";
 import { List, ListApi } from "./List";
-import "./styles/style.scss";
+import "../styles/style.scss";
 import { ListItem } from "./items";
 import * as Item from "./items";
 import * as Api from "./api";

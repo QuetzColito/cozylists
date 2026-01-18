@@ -1,6 +1,6 @@
 import type { Accessor, Component } from "solid-js";
 import { createMemo, createSignal, For, Show } from "solid-js";
-import "./styles/style.scss";
+import "../styles/style.scss";
 
 export type SelectorApi = {
   set_okAction: (action: (selection: string | undefined) => void) => void;
