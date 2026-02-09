@@ -30,6 +30,7 @@ export default defineConfig({
         lists: '/lists/index.html',
         account: '/account/index.html',
         gw2: '/gw2/index.html',
+        "": '/index.html',
       }
     }
   },
