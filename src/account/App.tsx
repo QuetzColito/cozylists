@@ -3,12 +3,11 @@ import "../styles/style.scss";
 import Egg from "../shared/Egg";
 import AccountView from "./AccountView";
 import LoginView from "./LoginView";
-import * as Api from "./api";
-import { User } from "./api";
+import { currentUser, User } from "../api/user";
 
 const App: Component = () => {
   const [user, set_user] = createSignal<STATEFUL_USER>("LOADING");
-  Api.currentUser()
+  currentUser()
     .then((returnedUser) => {
       if (returnedUser != null)
         set_user(returnedUser)

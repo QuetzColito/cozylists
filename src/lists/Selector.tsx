@@ -1,71 +1,34 @@
 import type { Accessor, Component } from "solid-js";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import "../styles/style.scss";
-
-export type SelectorApi = {
-  set_okAction: (action: (selection: string | undefined) => void) => void;
-  handler: (e: KeyboardEvent) => boolean;
-  set_forColor: (forColor: boolean) => void;
-  activate: () => void;
-};
+import { SelectorState } from "./Binds";
+import { Mode } from "../shared/KeyBindProcessor";
 
 type SelectorProps = {
-  get_api: (api: SelectorApi) => void;
+  get_api: (api: SelectorState) => void;
   colours: Map<string, string>;
   decorators: Map<string, string>;
+  activeMode: Accessor<Mode>
 };
 
 const Selector: Component<SelectorProps> = (props) => {
   const [selected, set_selected] = createSignal(0);
-  const [forColor, set_forColor] = createSignal(true);
-  const [active, set_active] = createSignal(false);
-  let okAction: (result: string | undefined) => void;
-  const select: Accessor<[string, string][]> = createMemo(() =>
+  const [forColor, set_forColor] = createSignal<boolean>(false);
+  const items: Accessor<[string, string][]> = createMemo(() =>
     forColor() ? [...props.colours.entries()] : [...props.decorators.entries()],
   );
 
   props.get_api({
-    set_okAction: (action) => (okAction = action),
-    set_forColor: (forColor) => set_forColor(forColor),
-    activate: () => set_active(true),
-    handler: (e: KeyboardEvent) => {
-      // Select directly via Id
-      if (
-        /^\d$/.test(e.key) &&
-        parseInt(e.key) <= select().length &&
-        parseInt(e.key) != 0
-      ) {
-        okAction(select()[parseInt(e.key) - 1][0]);
-        set_active(false);
-        return true;
-      }
-
-      switch (e.key) {
-        case "j": // Down
-          set_selected(Math.min(selected() + 1, select().length - 1));
-          break;
-        case "k": // Up
-          set_selected(Math.max(selected() - 1, 0));
-          break;
-        case "Escape": // Cancel
-          okAction(undefined);
-          set_active(false);
-          break;
-        case "Enter": // Confirm
-          okAction(select()[selected()][0]);
-          set_active(false);
-          break;
-        default:
-          return false;
-      }
-      return true;
-    },
+    selected: selected,
+    set_selected: set_selected,
+    set_forColor: set_forColor,
+    items: items
   });
 
   return (
-    <Show when={active()}>
+    <Show when={["Decorating", "Coloring"].includes(props.activeMode())}>
       <ul class="list">
-        <For each={select()}>
+        <For each={items()}>
           {([name, value], index) => (
             <li>
               <span> {index() + 1} </span>

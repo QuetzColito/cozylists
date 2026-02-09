@@ -1,0 +1,85 @@
+@use './colours.scss' as colours;
+
+.activeList {
+  background-color: colours.$bg1;
+  .active {
+    color: colours.$bg !important;
+    background-color: var(--item-color);
+    border-radius: 7px;
+  }
+  .selection {
+    background-color: var(--bg2);
+    // border-color: colours.$fg0 !important;
+  }
+}
+
+.inActiveList {
+  .active {
+    color: colours.$bg !important;
+    background-color: colours.$fg0;
+    border-radius: 7px;
+  }
+  .selection {
+    border-color: colours.$bg3 !important;
+  }
+}
+
+.lists {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  width: 100%;
+
+  .listWrapper {
+    margin: 2rem;
+    // width: 100%;
+    width: 30rem;
+    height: calc(100vh - 4rem);
+    border-top: solid 3px;
+    border-bottom: solid 3px;
+    border-color: colours.$fg0;
+    border-radius: 10px;
+    display: grid;
+    grid-template-rows: auto auto auto;
+
+    .header {
+      text-align: center;
+      margin: 0;
+      padding: .5rem;
+      border-bottom: dashed 2px;
+      border-color: colours.$fg0;
+    }
+
+    .list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .list {
+      list-style-type: none;
+      padding: 1rem;
+      margin: 0;
+      overflow: scroll;
+
+      li {
+        display: grid;
+        grid-template-columns: 2.5rem auto 1.7rem;
+
+        .line-number {
+          text-align: right;
+          margin-right: .3rem;
+        }
+
+        .name {
+          border: dotted transparent;
+          border-width: 0 .3rem;
+          padding: 0 .2rem;
+          color: var(--item-color);
+        }
+
+        .decorator {
+          text-align: right;
+        }
+      }
+    }
+  }
+}

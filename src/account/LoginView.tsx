@@ -1,5 +1,5 @@
 import type { Signal, Component, Accessor } from "solid-js";
-import { doLogin, doRegister } from "./api";
+import { doLogin, doRegister } from "../api/user";
 
 const LoginView: Component = () => {
   const getInput = (id: string) =>

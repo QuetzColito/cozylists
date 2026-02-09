@@ -2,25 +2,18 @@ import type { Accessor, Component, Setter, Signal } from "solid-js";
 import { createEffect, createMemo, For, Show } from "solid-js";
 import { createSignal } from "solid-js";
 import "../styles/style.scss";
-import { ParentApi } from "./Lists";
-import Selector, { SelectorApi } from "./Selector";
+import Selector from "./Selector";
 import { ListItem, StoredListItem } from "./items";
-import * as Item from "./items";
-
-export type ListApi = {
-  grabFocus: () => boolean;
-  handleKey: (e: KeyboardEvent) => boolean;
-  items: Accessor<ListItem[]>;
-  set_items: Setter<ListItem[]>;
-};
+import { ListState, SelectorState } from "./Binds";
+import { Mode } from "../shared/KeyBindProcessor";
 
 export type ListProps = {
   name: string;
   active: Accessor<boolean>;
   readonly: boolean;
   initialItems: ListItem[];
-  setListApi: (api: ListApi) => void;
-  parent: ParentApi;
+  setListApi: (api: ListState) => void;
+  activeMode: Accessor<Mode>
 };
 
 export const List: Component<ListProps> = (props: ListProps) => {
@@ -50,9 +43,11 @@ export const List: Component<ListProps> = (props: ListProps) => {
   ]);
 
   const [selected, set_selected] = createSignal(0);
-  const [selectionStart, set_selectionStart] = createSignal(0);
-  const lower = createMemo(() => Math.min(selected(), selectionStart()));
-  const upper = createMemo(() => Math.max(selected(), selectionStart()));
+  const [selectionStart, set_selectionStart] = createSignal<number>(0);
+  const editing = createMemo(() => props.activeMode() === "Editing")
+  const visual = createMemo(() => props.activeMode() === "Visual")
+  const lower = createMemo(() => visual() ? Math.min(selected(), selectionStart()) : selected());
+  const upper = createMemo(() => visual() ? Math.max(selected(), selectionStart()) : selected());
 
   // Automatic Scroll
   const SCROLL_OFF = 50;
@@ -78,207 +73,206 @@ export const List: Component<ListProps> = (props: ListProps) => {
       parent.scrollTo(0, eTop - parent.clientHeight + pTop + SCROLL_OFF);
   });
 
-  const [editing, set_editing] = createSignal(-1);
-  const [visual, set_visual] = createSignal(false);
-  const count = props.parent.count;
-  const commandPrefix = props.parent.commandPrefix;
-  let selectorActive = false;
-  createEffect(() => {
-    if (!visual()) set_selectionStart(selected());
-  });
+  // createEffect(() => {
+  //   if (!visual()) set_selectionStart(selected());
+  // });
 
-  const update_items = (track = true) => {
-    if (track) props.parent.updateHistory();
-    set_items(items());
-  };
+  // const update_items = (track = true) => {
+  //   if (track) props.parent.updateHistory();
+  //   set_items(items());
+  // };
 
-  const edit = (e: KeyboardEvent) => {
-    set_editing(selected());
-    getInput().focus();
-    set_visual(false);
-    e.preventDefault();
-  };
+  // const edit = (e: KeyboardEvent) => {
+  //   set_editing(selected());
+  //   getInput().focus();
+  //   set_visual(false);
+  //   e.preventDefault();
+  // };
 
   const getInput = () =>
     document.getElementById(selected().toString()) as HTMLInputElement;
 
-  const defaultMap = (e: KeyboardEvent) => {
-    // Edit
-    if (editing() >= 0) {
-      // exit Editing
-      if (e.key == "Enter" || e.key == "Escape") {
-        items()[selected()].name = getInput().value.trim();
-        update_items();
-        set_editing(-1);
-        return true;
-      } else return false;
-    }
+  // const defaultMap = (e: KeyboardEvent) => {
+  //   // Edit
+  //   if (editing() >= 0) {
+  //     // exit Editing
+  //     if (e.key == "Enter" || e.key == "Escape") {
+  //       items()[selected()].name = getInput().value.trim();
+  //       update_items();
+  //       set_editing(-1);
+  //       return true;
+  //     } else return false;
+  //   }
 
-    if (e.getModifierState("Control")) {
-      let match = true;
-      switch (e.key) {
-        case "d":
-        case "D": // Down Half-page
-          set_selected(Math.min(selected() + 20, items().length - 1));
-          break;
-        case "u":
-        case "U": // Up Half-page
-          set_selected(Math.max(selected() - 25, 0));
-          break;
-        default:
-          match = false;
-      }
-      if (match) {
-        e.preventDefault();
-        return true;
-      }
-    }
+  //   if (e.getModifierState("Control")) {
+  //     let match = true;
+  //     switch (e.key) {
+  //       case "d":
+  //       case "D": // Down Half-page
+  //         set_selected(Math.min(selected() + 20, items().length - 1));
+  //         break;
+  //       case "u":
+  //       case "U": // Up Half-page
+  //         set_selected(Math.max(selected() - 25, 0));
+  //         break;
+  //       default:
+  //         match = false;
+  //     }
+  //     if (match) {
+  //       e.preventDefault();
+  //       return true;
+  //     }
+  //   }
 
-    // Read
-    let match = true;
-    switch (e.key) {
-      case "J": // Down Half-page
-        set_selected(Math.min(selected() + count() * 25, items().length - 1));
-        break;
-      case "j": // Down
-        set_selected(Math.min(selected() + count(), items().length - 1));
-        break;
-      case "k": // Up
-        set_selected(Math.max(selected() - count(), 0));
-        break;
-      case "K": // Up Half-page
-        set_selected(Math.max(selected() - count() * 25, 0));
-        break;
-      case "g": // g submap, gg -> go to Top
-        if (commandPrefix() == "g") set_selected(0);
-        else return props.parent.appendCommand("g");
-        break;
-      case "G": // go to end
-        set_selected(items().length - 1);
-        break;
-      case "y": // yank (copy)
-        props.parent.setClipboard(items().slice(lower(), upper() + 1));
-        set_visual(false);
-        break;
-      case "v": // toggle visual mode
-        set_visual(!visual());
-        break;
-      case "Escape": // Exit visual mode
-        set_visual(false);
-        break;
-      default:
-        if (props.readonly) return false;
-        else match = false;
-    }
-    if (match) return true;
+  //   // Read
+  //   let match = true;
+  //   switch (e.key) {
+  //     case "J": // Down Half-page
+  //       set_selected(Math.min(selected() + count() * 25, items().length - 1));
+  //       break;
+  //     case "j": // Down
+  //       set_selected(Math.min(selected() + count(), items().length - 1));
+  //       break;
+  //     case "k": // Up
+  //       set_selected(Math.max(selected() - count(), 0));
+  //       break;
+  //     case "K": // Up Half-page
+  //       set_selected(Math.max(selected() - count() * 25, 0));
+  //       break;
+  //     case "g": // g submap, gg -> go to Top
+  //       if (commandPrefix() == "g") set_selected(0);
+  //       else return props.parent.appendCommand("g");
+  //       break;
+  //     case "G": // go to end
+  //       set_selected(items().length - 1);
+  //       break;
+  //     case "y": // yank (copy)
+  //       props.parent.setClipboard(items().slice(lower(), upper() + 1));
+  //       set_visual(false);
+  //       break;
+  //     case "v": // toggle visual mode
+  //       set_visual(!visual());
+  //       break;
+  //     case "Escape": // Exit visual mode
+  //       set_visual(false);
+  //       break;
+  //     default:
+  //       if (props.readonly) return false;
+  //       else match = false;
+  //   }
+  //   if (match) return true;
 
-    // Write
-    switch (e.key) {
-      case "d":
-      case "x": // delete Selection (and save to clipboard)
-        props.parent.setClipboard(
-          items().splice(
-            lower(),
-            Math.abs(selected() - selectionStart()) + count(),
-          ),
-        );
-        set_selected(Math.min(selected(), Math.max(items().length - 1, 0)));
-        set_visual(false);
-        update_items();
-        break;
-      case "c": // colour
-        select(true, (color) => {
-          if (color != undefined)
-            items()
-              .slice(lower(), upper() + 1)
-              .forEach((item) => item.color[1](color));
-        });
-        break;
-      case "r": // rate (apply decorator)
-        select(false, (decorator) => {
-          if (decorator != undefined)
-            items()
-              .slice(lower(), upper() + 1)
-              .forEach((item) => item.decorator[1](decorator));
-        });
-        break;
-      case "R": // Replace Selection with clipboard
-        props.parent.useClipboard((clipboard) =>
-          items().splice(
-            lower(),
-            Math.abs(selected() - selectionStart()) + count(),
-            ...clipboard,
-          ),
-        );
-        set_selected(Math.min(selected(), Math.max(items().length - 1, 0)));
-        set_visual(false);
-        update_items();
-        break;
-      case "o": // new Item below cursor
-        const offset = Math.min(items().length, 1);
-        items().splice(selected() + offset, 0, Item.create());
-        update_items(false);
-        set_selected(selected() + offset);
-        edit(e);
-        break;
-      case "O": // new Item above cursor
-        items().splice(selected(), 0, Item.create());
-        update_items(false);
-        edit(e);
-        break;
-      case "p": // paste below cursor
-        props.parent.useClipboard((clipboard) => {
-          const offsetp = Math.min(items().length, 1);
-          items().splice(selected() + offsetp, 0, ...clipboard);
-          update_items();
-        });
-        break;
-      case "P": // paste above cursor
-        props.parent.useClipboard((clipboard) => {
-          items().splice(selected(), 0, ...clipboard);
-          update_items();
-        });
-        break;
-      case "I":
-      case "i": // insert, cursor at start
-        edit(e);
-        getInput().setSelectionRange(Infinity, Infinity);
-        break;
-      case "A":
-      case "a": // append, cursor at end
-        edit(e);
-        break;
-      default:
-        return false;
-    }
-    return true;
-  };
+  //   // Write
+  //   switch (e.key) {
+  //     case "d":
+  //     case "x": // delete Selection (and save to clipboard)
+  //       props.parent.setClipboard(
+  //         items().splice(
+  //           lower(),
+  //           Math.abs(selected() - selectionStart()) + count(),
+  //         ),
+  //       );
+  //       set_selected(Math.min(selected(), Math.max(items().length - 1, 0)));
+  //       set_visual(false);
+  //       update_items();
+  //       break;
+  //     case "c": // colour
+  //       select(true, (color) => {
+  //         if (color != undefined)
+  //           items()
+  //             .slice(lower(), upper() + 1)
+  //             .forEach((item) => item.color[1](color));
+  //       });
+  //       break;
+  //     case "r": // rate (apply decorator)
+  //       select(false, (decorator) => {
+  //         if (decorator != undefined)
+  //           items()
+  //             .slice(lower(), upper() + 1)
+  //             .forEach((item) => item.decorator[1](decorator));
+  //       });
+  //       break;
+  //     case "R": // Replace Selection with clipboard
+  //       props.parent.useClipboard((clipboard) =>
+  //         items().splice(
+  //           lower(),
+  //           Math.abs(selected() - selectionStart()) + count(),
+  //           ...clipboard,
+  //         ),
+  //       );
+  //       set_selected(Math.min(selected(), Math.max(items().length - 1, 0)));
+  //       set_visual(false);
+  //       update_items();
+  //       break;
+  //     case "o": // new Item below cursor
+  //       const offset = Math.min(items().length, 1);
+  //       items().splice(selected() + offset, 0, Item.create());
+  //       update_items(false);
+  //       set_selected(selected() + offset);
+  //       edit(e);
+  //       break;
+  //     case "O": // new Item above cursor
+  //       items().splice(selected(), 0, Item.create());
+  //       update_items(false);
+  //       edit(e);
+  //       break;
+  //     case "p": // paste below cursor
+  //       props.parent.useClipboard((clipboard) => {
+  //         const offsetp = Math.min(items().length, 1);
+  //         items().splice(selected() + offsetp, 0, ...clipboard);
+  //         update_items();
+  //       });
+  //       break;
+  //     case "P": // paste above cursor
+  //       props.parent.useClipboard((clipboard) => {
+  //         items().splice(selected(), 0, ...clipboard);
+  //         update_items();
+  //       });
+  //       break;
+  //     case "I":
+  //     case "i": // insert, cursor at start
+  //       edit(e);
+  //       getInput().setSelectionRange(Infinity, Infinity);
+  //       break;
+  //     case "A":
+  //     case "a": // append, cursor at end
+  //       edit(e);
+  //       break;
+  //     default:
+  //       return false;
+  //   }
+  //   return true;
+  // };
 
-  let currentMap = defaultMap;
+  // let currentMap = defaultMap;
 
   props.setListApi({
-    handleKey: (e) => currentMap(e),
-    grabFocus: () => editing() >= 0 || selectorActive,
+    selected: selected,
+    set_selected: set_selected,
+    selectionStart: selectionStart,
+    set_selectionStart: set_selectionStart,
     items: items,
+    bounds: [lower, upper],
     set_items: set_items,
+    s: () => selectorApi
   });
 
-  let selectorApi: SelectorApi;
-  const select = (
-    forColor: boolean,
-    action: (item: string | undefined) => void,
-  ) => {
-    selectorApi.set_forColor(forColor);
-    selectorApi.set_okAction((item) => {
-      action(item);
-      update_items();
-      currentMap = defaultMap;
-      selectorActive = false;
-    });
-    currentMap = selectorApi.handler;
-    selectorActive = true;
-    selectorApi.activate();
-  };
+  let selectorApi: SelectorState;
+  // const select = (
+  //   forColor: boolean,
+  //   action: (item: string | undefined) => void,
+  // ) => {
+  //   selectorApi.set_forColor(forColor);
+  //   selectorApi.set_okAction((item) => {
+  //     action(item);
+  //     // update_items();
+  //     // currentMap = defaultMap;
+  //     selectorActive = false;
+  //   });
+  //   // currentMap = selectorApi.handler;
+  //   selectorActive = true;
+  //   selectorApi.activate();
+  // };
 
   return (
     <div
@@ -302,6 +296,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
         get_api={(api) => (selectorApi = api)}
         decorators={decorators}
         colours={colours}
+        activeMode={props.activeMode}
       />
       <ul class="list" id={props.name}>
         <For each={items()}>
@@ -312,7 +307,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
                   ? index()
                   : Math.abs(selected() - index())}
               </span>
-              <Show when={index() != editing()}>
+              <Show when={!editing()}>
                 <span
                   classList={{
                     active: selected() == index(),
@@ -329,7 +324,7 @@ export const List: Component<ListProps> = (props: ListProps) => {
                   {item.name}
                 </span>
               </Show>
-              <Show when={index() == editing()}>
+              <Show when={editing() && index() == selected()}>
                 <input id={index().toString()} value={item.name} />
               </Show>
               <span class="decorator">

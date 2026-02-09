@@ -1,4 +1,4 @@
-import { StoredListItem } from "./items";
+import { StoredListItem } from "../lists/items";
 
 const apiUrl = import.meta.env.VITE_GOZY_URL;
 

@@ -1,5 +1,5 @@
 import type { Signal, Component, Accessor } from "solid-js";
-import { doDelete, doLogout, User } from "./api";
+import { doDelete, doLogout, User } from "../api/user";
 
 export type AccountViewProps = {
   user: User | null;

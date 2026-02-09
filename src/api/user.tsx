@@ -1,6 +1,7 @@
 export type User = {
-  name: string
-}
+  name: string,
+  id: number
+} | null
 
 export type Credentials = {
   username: string
