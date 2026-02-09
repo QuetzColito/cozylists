@@ -29,6 +29,7 @@ export default defineConfig({
       input: {
         lists: '/lists/index.html',
         account: '/account/index.html',
+        gw2: '/gw2/index.html',
       }
     }
   },
