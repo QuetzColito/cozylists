@@ -1,5 +1,5 @@
 import { createSignal, Signal, type Component } from "solid-js";
-import "../styles/style.scss"
+import "../styles/lists.scss"
 import Egg from "../shared/Egg";
 import Lists from "./Lists";
 import Navigation from "../shared/Navigation";

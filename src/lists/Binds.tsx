@@ -1,5 +1,4 @@
 import { Accessor, Setter } from "solid-js";
-import "../styles/style.scss";
 import { ListItem } from "./items";
 import { KeyBind, Mode } from "../shared/KeyBindProcessor";
 

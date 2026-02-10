@@ -1,0 +1,43 @@
+@use './colours.scss' as colours;
+
+body {
+overflow: hidden;
+}
+#root {
+overflow: hidden;
+
+}
+
+.gw2 {
+  list-style-type: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  row-gap: .3rem;
+  overflow: hidden;
+
+  li {
+    text-align:center;
+    transition: all .1s ease-out;
+    background-image: linear-gradient( rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) ), url('../assets/spirit_vale.jpg');
+    background-repeat: no-repeat;
+    background-size: cover;
+    border: 2px solid colours.$bg3;
+    width: 10rem;
+    min-height: 5rem;
+  }
+
+  li.selected {
+    border-color: colours.$purple;
+    width: 14rem;
+    min-height: 8rem;
+  }
+  li.selected + li {
+    width: 12rem;
+    min-height: 6rem;
+  }
+  li:has(+ li.selected) {
+    width: 12rem;
+    min-height: 6rem;
+  }
+}

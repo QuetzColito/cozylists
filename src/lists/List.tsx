@@ -1,7 +1,6 @@
 import type { Accessor, Component, Setter, Signal } from "solid-js";
 import { createEffect, createMemo, For, Show } from "solid-js";
 import { createSignal } from "solid-js";
-import "../styles/style.scss";
 import Selector from "./Selector";
 import { ListItem, StoredListItem } from "./items";
 import { ListState, SelectorState } from "./Binds";

@@ -1,6 +1,5 @@
 import type { Accessor, Component } from "solid-js";
 import { createMemo, createSignal, For, Show } from "solid-js";
-import "../styles/style.scss";
 import { SelectorState } from "./Binds";
 import { Mode } from "../shared/KeyBindProcessor";
 
