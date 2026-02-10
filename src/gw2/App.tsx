@@ -4,52 +4,9 @@ import "../styles/gw2.scss";
 import Egg from "../shared/Egg";
 import { buildProcessor, process } from "../shared/KeyBindProcessor";
 import { binds } from "./Binds";
+import { encounters } from "./Encounter";
 
 const App: Component = () => {
-  const encounters = [
-    "Adina",
-    "Aetherblade Hideout",
-    "Boneskinner",
-    "Cairn",
-    "Cold War",
-    "Conjured Amalgamate",
-    "Cosmic Observatory",
-    "Decima",
-    "Deimos",
-    "Dhuum",
-    "Fraenir of Jormag",
-    "Gates of Ahdashim",
-    "Gorseval",
-    "Greer",
-    "Harvest Temple",
-    "Kaineng Overlook",
-    "Keep Construct",
-    "Kela",
-    "Matthias Gabrel",
-    "Mursaat Overseer",
-    "Old Lion's Court",
-    "Prison Camp",
-    "Qadim",
-    "Qadim the Peerless",
-    "River of Souls",
-    "Sabetha",
-    "Sabir",
-    "Samarog",
-    "Shiverpeaks Pass",
-    "Siege the Stronghold",
-    "Slothasor",
-    "Soulless Horror",
-    "Statues of Grenth",
-    "Temple of Febe",
-    "Twin Largos",
-    "Twisted Castle",
-    "Ura",
-    "Vale Guardian",
-    "Voice of the Fallen and Claw of the Fallen",
-    "Whisper of Jormag",
-    "Xera",
-    "Xunlai Jade Junkyard",
-  ]
 
   const [selected, set_selected] = createSignal(0)
   const [stepping, set_stepping] = createSignal(false)
@@ -104,7 +61,16 @@ height: calc(${+5.3 * selected() + 2.5 + (selected() > 1 ? 1 : 0)}rem + 50vh);
 `}>
         <For each={encounters}>
           {(encounter, index) => (
-            <li class={index() == selected() ? "selected" : "unselected"} id={index() + ""}> {encounter} </li>
+            <li
+              class={index() == selected() ? "selected" : "unselected"}
+              id={index() + ""}
+              // style={`background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('${encounter.bgUrl}'); `}
+              style={`background-image: url('${encounter.bgUrl}'); `}
+            >
+              <div class="shadow">
+                {encounter.name}
+              </div>
+            </li>
           )}
         </For>
       </ul>
