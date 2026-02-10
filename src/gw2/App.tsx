@@ -87,6 +87,12 @@ const App: Component = () => {
   document.addEventListener("keydown", (e) => {
     process(bindProcessor, { up: up, down: down, pick: pick }, e)
   });
+  document.addEventListener("wheel", (e) => {
+    if (e.deltaY > 0)
+      down()
+    else
+      up()
+  });
 
   // background-image: linear-gradient( rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) ), url('../assets/${item[1]}');
   return (
