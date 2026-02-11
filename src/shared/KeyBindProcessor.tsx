@@ -1,40 +1,40 @@
 import { Accessor, createSignal, Setter, Signal } from "solid-js";
 import "../styles/style.scss";
 
-export type KeyBind<A> = {
+export type KeyBind<A, M> = {
   prefix: string[],
   binds: string[],
-  mode: string,
+  mode: M,
   explanation: string,
-  effect: (api: A) => string | undefined
+  effect: (api: A) => M | undefined
 }
 
-export type Action<A> = ((api: A) => string | undefined) | BindMap<A>
-export type BindMap<A> = Map<string, Action<A>>
-export type BindProcessor<A> = {
+export type Action<A, M> = ((api: A) => M | undefined) | BindMap<A, M>
+export type BindMap<A, M> = Map<string, Action<A, M>>
+export type BindProcessor<A, M> = {
   count: number,
-  activeMap: BindMap<A>,
-  activeMode: Accessor<Mode>,
-  set_activeMode: Setter<Mode>,
-  modes: Map<string, BindMap<A>>
+  activeMap: BindMap<A, M>,
+  activeMode: Accessor<M>,
+  set_activeMode: Setter<M>,
+  modes: Map<M, BindMap<A, M>>
 }
 
-export type Mode = "Normal" | "Visual" | "Decorating" | "Coloring" | "Editing"
+export type DefaultMode = "Normal"
 
-export function buildProcessor<A>(binds: KeyBind<A>[], defaultMode: Mode = "Normal"): BindProcessor<A> {
-  const modeMap = new Map<string, BindMap<A>>;
+export function buildProcessor<A, M>(binds: KeyBind<A, M>[], defaultMode: M = "Normal" as M): BindProcessor<A, M> {
+  const modeMap = new Map<M, BindMap<A, M>>;
   binds.forEach(bind => {
     if (!modeMap.has(bind.mode))
-      modeMap.set(bind.mode, new Map<string, Action<A>>)
+      modeMap.set(bind.mode, new Map<string, Action<A, M>>)
     let current = modeMap.get(bind.mode)!;
 
     bind.prefix.forEach(prefix => {
       if (!(current.get(prefix) instanceof Map)) {
-        const nested = new Map<string, Action<A>>
+        const nested = new Map<string, Action<A, M>>
         current.set(prefix, nested)
         current = nested
       } else
-        current = current.get(prefix) as BindMap<A>
+        current = current.get(prefix) as BindMap<A, M>
     })
     bind.binds.forEach(key => {
       current.set(key, bind.effect)
@@ -50,7 +50,7 @@ export function buildProcessor<A>(binds: KeyBind<A>[], defaultMode: Mode = "Norm
   }
 }
 
-export function process<A>(processor: BindProcessor<A>, bindApi: A, ev: KeyboardEvent) {
+export function process<A, M>(processor: BindProcessor<A, M>, bindApi: A, ev: KeyboardEvent) {
   // console.log(ev.key)
   // console.log(processor)
 
@@ -59,13 +59,13 @@ export function process<A>(processor: BindProcessor<A>, bindApi: A, ev: Keyboard
     processor.count = parseInt(processor.count.toString() + ev.key);
     return
   }
-  const doAction = (action: Action<A> | undefined): boolean => {
+  const doAction = (action: Action<A, M> | undefined): boolean => {
     if (action !== undefined) {
       if (action instanceof Map) {
         processor.activeMap = action
       } else {
         for (let i = 0; i < Math.max(processor.count, 1); i++) {
-          processor.set_activeMode(action(bindApi) || processor.activeMode());
+          processor.set_activeMode((action as any)(bindApi) || processor.activeMode());
         }
         processor.activeMap = processor.modes.get(processor.activeMode())!
       }
@@ -83,11 +83,48 @@ export function process<A>(processor: BindProcessor<A>, bindApi: A, ev: Keyboard
   doAction(action)
 }
 
-type BindHelpProps<A> = {
-  binds: [KeyBind<A>]
+export const makeBinds = <A, M>(explanation: string
+  , effect: (a: A) => void
+  , binds: string[]
+  , modes: M[] = ["Normal" as M]
+  , prefix: string[] = []
+): KeyBind<A, M>[] => {
+  return modes.map((mode) => {
+    return {
+      mode: mode,
+      prefix: prefix,
+      binds: binds,
+      explanation: explanation,
+      effect: (a) => {
+        effect(a);
+        return undefined
+      }
+    }
+  })
 }
 
-export const BindHelpPage = <A,>(props: BindHelpProps<A>) => {
+export const makeChangeBinds = <A, M>(explanation: string
+  , effect: (a: A) => M
+  , binds: string[]
+  , modes: M[] = ["Normal" as M]
+  , prefix: string[] = []
+): KeyBind<A, M>[] => {
+  return modes.map((mode) => {
+    return {
+      mode: mode,
+      prefix: prefix,
+      binds: binds,
+      explanation: explanation,
+      effect: effect
+    }
+  })
+}
+
+type BindHelpProps<A, M> = {
+  binds: [KeyBind<A, M>]
+}
+
+export const BindHelpPage = <A, M>(props: BindHelpProps<A, M>) => {
 
   return (
     <div >
