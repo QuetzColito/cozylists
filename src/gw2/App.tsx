@@ -4,7 +4,7 @@ import "../styles/gw2.scss";
 import Egg from "../shared/Egg";
 import { buildProcessor, process } from "../shared/KeyBindProcessor";
 import { binds, Gw2State } from "./Binds";
-import { allEncounters } from "./Encounter";
+import { allEncounters, Encounter } from "./Encounter";
 
 const App: Component = () => {
   const bindProcessor = buildProcessor(binds)
@@ -14,7 +14,7 @@ const App: Component = () => {
   const [stepping, set_stepping] = createSignal(false)
 
   const [encounters, set_encounters] = createSignal(allEncounters);
-  const [filteredEncounters, set_filteredEncounters] = createSignal(encounters());
+  const [filteredEncounters, set_filteredEncounters] = createSignal<Encounter[]>([]);
   const [rowLength, set_rowLength] = createSignal(1)
 
   const mod = (a: number, b: number) => (((a % b) + b) % b)
@@ -86,7 +86,7 @@ const App: Component = () => {
     <>
       <div class="layout">
         <div class="standby-area" id="standby">
-          <For each={encounters()}>
+          <For each={filteredEncounters()}>
             {(encounter, index) => (
               <div
                 class={(index() == filteredSelected() && bindProcessor.activeMode() == "Unfiltering" ? "selected" : "unselected") + " item"}
@@ -109,7 +109,7 @@ const App: Component = () => {
             {(encounter, index) => (
               <li
                 class={index() == selected() && bindProcessor.activeMode() == "Normal" ? "selected" : "unselected"}
-                id={index() + ""}
+                id={"encounter." + index()}
                 style={`background-image: url('${encounter.bgUrl}'); `}
               >
                 <div class="shadow">

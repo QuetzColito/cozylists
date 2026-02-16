@@ -44,6 +44,10 @@ export const binds: KeyBind<Gw2State, Gw2Mode>[] = [
   makeGw2Binds("Pick a random Encounter", (a) => {
     a.pick()
   }, ["Enter"], ["Normal"]),
+  makeGw2Binds("Filter the selected Encounter", (a) => {
+    a.set_filteredEncounters(prev => [...prev, a.encounters()[a.selected()]])
+    a.set_encounters(prev => prev.filter(enc => enc.short !== a.encounters()[a.selected()].short))
+  }, ["Backspace"], ["Normal"]),
   makeGw2ChangeBinds("Swap to Filtered List", (a) => {
     return "Unfiltering"
   }, ["f"], ["Normal"]),
@@ -64,6 +68,10 @@ export const binds: KeyBind<Gw2State, Gw2Mode>[] = [
   makeGw2Binds("Move Right", (a) => {
     a.set_filteredSelected(Math.min(a.filteredSelected() + 1, a.filteredEncounters().length));
   }, ["l", "L", "ArrowRight"], ["Unfiltering"]),
+  makeGw2Binds("Unfilter the selected Encounter", (a) => {
+    a.set_encounters(prev => [...prev, a.filteredEncounters()[a.filteredSelected()]])
+    a.set_filteredEncounters(prev => prev.filter(enc => enc.short !== a.filteredEncounters()[a.filteredSelected()].short))
+  }, ["Backspace"], ["Unfiltering"]),
 
   makeGw2ChangeBinds("Swap back to Main List", (a) => {
     return "Normal"
